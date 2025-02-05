@@ -1,0 +1,5 @@
+https://theshoemaker.de/posts/yet-another-cpp-coroutine-tutorial
+Yet Another C++ Coroutine Tutorial [2023-04-24}
+
+https://devblogs.microsoft.com/oldnewthing/20191209-00/?p=103195
+C++ coroutines: Getting started with awaitable objects [2019년 12월 9일]

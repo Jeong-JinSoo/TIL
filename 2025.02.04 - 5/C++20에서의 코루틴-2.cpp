@@ -206,3 +206,180 @@ catch (const int&) {
 // 실행 결과는 다음과 같다. 예외를 전파한 이후로는 호출자의 함수도 실행되지 않는다.
 CoroutineFunc #1
 Coroutine : throw 1; // 예외가 발생한 이후로는 호출자의 함수도 실행되지 않습니다.
+
+// 코루틴 함수의 promise 개체 제어 흐름
+// co_await, co_yield, co_return가 포함된 코루틴 함수는 함수 본문을 실행하기 전에 promise개체를
+// 다음과 같이 처리해 준다.
+// 1. #1 : promise 개체를 생성한다.
+// 2. #2 : 코루틴 개체를 생성한다.
+// 3. #3 : promise 개체를 생성한다.
+// 4. #4 : 함수 본문을 일시 정지/재개 하면서 실행하고, 예외 발생시 unhandled_exception()을 실행한다.
+// 5. #5 : co_return을 한 경우 return_void()나 return_value()를 실행한다.
+
+MyPromise p; // #1. promise 개체를 생성합니다.
+MyCoroutine obj = p.get_return_object(); // #2. 코루틴 개체를 생성합니다.
+
+co_await p.initial_suspend(); // #3. 최초 실행시 일시 정지를 합니다.
+
+try {
+	// #4. 함수 본문을 처리합니다.
+}
+catch (...) {
+	p.unhandled_exception(); // #4
+}
+p.return_void(); // #5. 혹은 p.return_value(); co_return을 한 경우만 실행됩니다. 
+co_await p.final_suspend(); // #3. 종료시 일시 정지를 합니다.
+
+// co_return
+// co_return은 코루틴 함수를 종료하고 리턴한다. 일반적인 함수라면 함수의 리턴값을 그대로 전달 받을 수 있으나
+// 코루틴 함수는 다음과 같이 코루틴 함수 -> promise 개체 -> 코루틴 개체를 통해 호출자에게 전달된다.
+// 1. #1 : 코루틴 함수에서 값을 리턴한다.
+// 2. #2 : promise 개체의 return_value()에서 #3의 멤버 변수에 저장한다.
+//			(값 전달 없이 co_return;을 하면 return_void()가 호출된다.)
+// 3. #4 : 코루틴 개체에서 코루틴 핸들을 통해 promise 개체의 m_Val에 접근한다.
+// 4. #5 : 호출자에서 콜 틴 개체를 통해 코루틴 함수의 리턴값에 접근한다.
+
+// 코루틴 개체
+class MyCoroutine {
+public:
+	struct MyPromise;
+	using promise_type = MyPromise;
+private:
+	std::coroutine_handle<promise_type> m_Handler; // 코루틴 핸들
+public:
+	MyCoroutine(std::coroutine_handle<promise_type> handler) : m_Handler(handler) {}
+	~MyCoroutine() {
+		if (m_Handler) {
+			m_Handler.destroy();
+		}
+	}
+	MyCoroutine(const MyCoroutine&) = delete;
+	MyCoroutine(MyCoroutine&&) = delete;
+	MyCoroutine& operator =(const MyCoroutine&) = delete;
+	MyCoroutine& operator =(MyCoroutine&&) = delete;
+
+	int GetVal() const { return m_Handler.promise().m_Val; } // #4. promise 개체의 멤버 변수 값을 리턴합니다.
+	void Resume() const {
+		if (!m_Handler.done()) {
+			m_Handler.resume();
+		}
+	}
+
+	// Promise 개체
+	struct MyPromise {
+		MyPromise() = default;
+		~MyPromise() = default;
+		MyPromise(const MyPromise&) = delete;
+		MyPromise(MyPromise&&) = delete;
+		MyPromise& operator =(const MyPromise&) = delete;
+		MyPromise& operator =(MyPromise&&) = delete;
+
+		int m_Val{ 0 }; // #3. return_value()에서 설정된 값을 저장합니다.
+		MyCoroutine get_return_object() {
+			return MyCoroutine{ std::coroutine_handle<MyPromise>::from_promise(*this) };
+		}
+		auto initial_suspend() { return std::suspend_always{}; }
+		auto final_suspend() noexcept { return std::suspend_always{}; }
+		void return_value(int val) { m_Val = val; } // #2. co_return val; 시 호출됩니다.
+		// void return_void() {} // co_return; 시 호출
+		void unhandled_exception() {}
+	};
+};
+
+// 코루틴 함수
+MyCoroutine CoroutineFunc() {
+	std::cout << "CoroutineFunc #1" << std::endl;
+	co_await std::suspend_always{};
+	std::cout << "CoroutineFunc #2" << std::endl;
+	co_await std::suspend_always{};
+	std::cout << "CoroutineFunc #3" << std::endl;
+	co_return 100; // #1. 코루틴 함수에서 값을 리턴하고 종료합니다.
+}
+
+MyCoroutine obj = CoroutineFunc();
+EXPECT_TRUE(obj.GetVal() == 0); // #5
+
+obj.Resume(); // CoroutineFunc #1
+EXPECT_TRUE(obj.GetVal() == 0); // #5
+
+obj.Resume(); // CoroutineFunc #2
+EXPECT_TRUE(obj.GetVal() == 0); // #5
+
+obj.Resume(); // CoroutineFunc #3
+EXPECT_TRUE(obj.GetVal() == 100); // #5
+
+// co_yield
+// co_yield은 코루틴 함수를  일시정지하고 리턴 한다.
+// co_return과 같이 코루틴 함수-> promise 개체 -> 코루틴 개체를 통해 호출자에 전달된다.
+// 1. #1 : 코루틴 함수에서 yield_value()를 호출하고 일시 정지 한다.
+// 2. #2 : promise 개체의 yield_value()에서 #3의 멤버 변수에 저장한다. 이때 일시정지 하도록 
+//			suspend_always를 리턴한다.
+// 3. #4 : 코루틴 개체에서 코루틴 핸들을 통해 promise 개체의 m_Val에 접근한다.
+// 4. #5 : 호출자에서 코루틴 개체를 통해 코루틴 함수의 리턴값에 접근한다.
+// 코루틴 개체
+class MyCoroutine {
+public:
+	struct MyPromise;
+	using promise_type = MyPromise;
+private:
+	std::coroutine_handle<promise_type> m_Handler; // 코루틴 핸들
+public:
+	MyCoroutine(std::coroutine_handle<promise_type> handler) : m_Handler(handler) {}
+	~MyCoroutine() {
+		if (m_Handler) {
+			m_Handler.destroy();
+		}
+	}
+	MyCoroutine(const MyCoroutine&) = delete;
+	MyCoroutine(MyCoroutine&&) = delete;
+	MyCoroutine& operator =(const MyCoroutine&) = delete;
+	MyCoroutine& operator =(MyCoroutine&&) = delete;
+
+	int GetVal() const { return m_Handler.promise().m_Val; } // #4. promise 개체의 멤버 변수 값을 리턴합니다.
+	void Resume() const {
+		if (!m_Handler.done()) {
+			m_Handler.resume();
+		}
+	}
+
+	// Promise 개체
+	struct MyPromise {
+		MyPromise() = default;
+		~MyPromise() = default;
+		MyPromise(const MyPromise&) = delete;
+		MyPromise(MyPromise&&) = delete;
+		MyPromise& operator =(const MyPromise&) = delete;
+		MyPromise& operator =(MyPromise&&) = delete;
+
+		int m_Val{ 0 }; // #3. return_value()에서 설정된 값을 저장합니다.
+
+		MyCoroutine get_return_object() {
+			return MyCoroutine{ std::coroutine_handle<MyPromise>::from_promise(*this) };
+		}
+		auto initial_suspend() { return std::suspend_always{}; }
+		auto final_suspend() noexcept { return std::suspend_always{}; }
+		auto yield_value(int val) { // #2. co_yield 시 호출됩니다.
+			m_Val = val;
+			return std::suspend_always{}; // co_yield 후 일시 정지 상태로 만듭니다.
+		}
+
+		void unhandled_exception() {}
+	};
+};
+
+// 코루틴 함수
+MyCoroutine CoroutineFunc() {
+	int result = 0;
+	while (true) {
+		co_yield result; // #1. MyPromise.yield_value()를 호출하고 일시 정지 합니다.
+		++result;
+	}
+}
+
+std::vector<int> v;
+auto func = CoroutineFunc();
+for (int i = 0; i < 3; ++i) {
+	func.Resume();
+	v.push_back(func.GetVal()); // #5
+}
+EXPECT_TRUE(v.size() == 3 && v[0] == 0 && v[1] == 1 && v[2] == 2);
