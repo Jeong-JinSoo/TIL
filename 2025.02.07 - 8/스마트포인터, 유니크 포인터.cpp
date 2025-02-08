@@ -191,3 +191,217 @@ ptr2는 이전에 ptr1이 가리켰던 메모리를 가리키게 된다.
 
 이러한 특성은 std::unique_ptr이 자원의 '유일한' 소유자임을 보장한다. 이것은 메모리 관리를 더욱 안전하고 예측
 가능하게 만드는 중요한 속성이다.
+
+std::unique_ptr은 이러한 속성 덕분에 다양한 유스케이스에서 유용하게 사용된다. 예를 들어, 함수에서 동적으로
+할당된 메모리를 반환할 때, std::unique_ptr를 사용하면 호출자가 반환된 메모리의 소유권을 명확하게 이해 할 수
+있으며, 메모리의 누수의 위험을 크게 줄일 수 있다.
+
+ex)
+
+std::unique_ptr<int> creatInt(int value)
+{
+	return std::unique_ptr<int>(new int value));
+}
+
+void useInt()
+{
+	std::unique_ptr<int> ptr = createInt(5);
+	// 여기서 ptr은 createInt에서 반환된 메모리를 소유한다.
+	// ptr이 범위를 벗어날 때, 메모리는 자동으로 해제된다.
+}
+
+이처럼, std::unique_ptr은 C++에서 안전하고 효과적인 메모리 관리를 가능하게 하는 강력한 도구이다.
+
+3. std::shared_ptr
+
+std::shared_ptr는 그 이름에서 알 수 있듯이 메모리에 대한 '공유' 소유권을 제공하는 스마트 포인터이다.이는 여러
+std::shared_ptr인스턴스가 동일한 메모리를 가리킬 수 있음을 의미한다.그렇다면 어떻게 메모리 누수를 방지할까 ?
+이것이 std::shared_ptr의 핵심 적인 부분이다.내부적으로 레퍼런스 카운팅을 수행하여, 메모리를 가리키는
+std::shared_ptr 인스턴스를 추적한다.
+
+ex)
+std::shared_ptr<int ptr1(new int(5));
+std::shared_ptr<int> ptr2 = ptr1;
+
+ptr1과 ptr2 모두 동일한 메모리를 가리키며, 레퍼런스 카운트는 2이다.이 예제에서 ptr1을 ptr2로 복사했고, 둘 다
+동일한 메모리를 가리킨다.각각의 std::shared_ptr는 이 메모리에 대한 공유 소유권을 가지며, 레퍼런스 카운트를
+통해 이를 관리한다.이 경우, 레퍼런스 카운트는 2가 된다.
+
+std::shared_ptr의 중요한 특징은, 레퍼런스 카운트가 0이 되면 특시 메모리가 해제된다는 점이다.이는 다음과 같이
+동작한다.
+
+ex)
+
+{
+	std::shared_ptr<int> ptr1(new int(5));
+	{
+		std::shared_ptr<int> ptr2 = ptr1;
+		// ptr1과 ptr2는 모두 동일한 메모리를 가리키며, 레퍼런스 카운트는 2이다.
+	}	// ptr2가 범위를 벗어나므로, 레퍼런스 카운트는 1로 감소한다.
+	// ptr1이 여전히 메모리를 가리키고 있으므로, 메모리는 유지된다.
+}	// ptr1이 범위를 벗어나면, 레퍼런스 카운트가 0이 되고 메모리가 해제된다.
+
+따라서 std::chared_ptr은 여러 객체가 동일한 리소스를 안전하게 공유 할 수 있도록 해준다.그러나 이것은 반드시
+필요한 경우에만 사용해야 한다.불필요한 레퍼런스 카운팅은 성능을 저하시킨다.또한 std::shared_ptr은 순환 참조
+문제를 야기 할 수 있다.이 문제는 std::weak_ptr을 통해 해결 할 수 있다.
+
+4. std::weak_ptr
+
+std::weak_ptr는 std::shared_ptr의 중요한 동반자이며, 스마트 포인터가 순환 참조와 같은 문제에 대처하는 데 큰
+도움을 준다.기본적으로 std::weak_ptr은 std::shared_ptr와 유사하지만, 가리키는 객체의 수명에 영량을 주지
+않는 '약한' 참조를 제공한다는 점에서 다르다.이는 순환 참조를 피하는데 유용하다.
+
+순환 참조는 두 객체가 서로를 참조하고, 둘다 std::shared_ptr를 사용하여 참조를 유지하는 경우에 발생한다.이
+경우, 두 객체 모두 레퍼런스 카운트가 절대 0이 되지 않아 메모리 누수가 발생한다.
+
+ex)
+
+struct B;
+struct A
+{
+	std::shared_ptr<B> b_ptr;
+};
+
+sruct B
+{
+	std::shared_ptr<A> a_ptr;
+};
+
+std::shared_ptr<A> a(new A());
+std::shared_ptr<B> b(new B());
+
+a->b_ptr = b;
+b->a_ptr = a; // 순환 참조 생성
+
+위 예제에서, A와 B객체는 서로를 참조하므로 순환 참조가 발생한다.레퍼런스 카운트가 절대로 0이 되지 않으므로 메모리가
+누수된다.이 문제를 해결하려면 std::weak_ptr을 사용한다.
+
+ex)
+
+struct B;
+struct A
+{
+	std::shared_ptr<B> b_ptr;
+};
+
+struct B
+{
+	std::weak_ptr<A> a_ptr; // 약한 참조 사용
+};
+
+std::shared_ptr<A> a(new A());
+std::shared_ptr<A> a(new B());
+
+a->b_ptr = b;
+b->a_ptr = a;
+
+*두 예제의 차이는 strct B에서 사용된것이 shared_ptr이냐 weak_ptr이냐의 차이뿐이다.a_ptr
+
+이제 B는 std::weak_ptr를 사용하여 A를 하므로, 순환 참조가 발생하지 않는다. A가 파괴되면 std::weak_ptr은 lock() 함수를
+사용하여 std::shared_ptr로 변환 할 수 있다. 이 함수는 해당 객체가 여전히 존재하는 경우에만 st::shared_ptr를 반환하므로,
+메모리를 안전하게 접근 할 수 있습니다.
+
+ex)
+
+if (std::shared_ptr<A> a_locked = b->a_ptr.lock())
+{
+	// 객체가 여전히 존재하므로 안전하게 접근 할 수 있다.
+}
+
+else
+{
+	// 객체가 이미 파괴되었다.
+}
+
+따라서 std::weak_ptr은 순환 참조와 같은 복잡한 문제를 해결하는데 있어서 std::shated_ptr와 함께 중요한 역할을 한다.
+
+std::unique_ptr에 대해
+
+std::unique_ptr는 C++11부터 제공되는 스마트 포인터의 한 종류이다. 이 스마트 포인터는 단이 소유권 모델을 구현한다. 즉,
+std::unique_ptr는 메모리 블록을 독점적으로 소유하고, 복사는 허용되지 않는다. 이러한 특성은 메모리 누수를 예방하고, 자원을
+안전하게 관리하는 데 매우 유용하다. 또한 std::unique_ptr를 사용하는 것이 좋다.
+
+1. std::unique_ptr의 정의와 특징
+std::unique_ptr는 C++11에서 도입된 스마트포인터 중 하나로, 이 포인터는 "유일한 소유권" 모델을 따른다. 이말은, 한번에 한
+std::unique_ptr만이 특정 객체를 소유 할 수 있다는 뜻이다. 이러한 속서은 단일 소유가 보장되어야 하는 시스템 리소스 관리에
+적합하다.
+
+ex)
+
+#include <memory>
+#include <iostream>
+
+class MyClass
+{
+public:
+	MyClass() { std::cout << "MyCLass constructed\n"; }
+	~MyClass() { std::cout << "MyClass destroyed\n"; }
+};
+
+int main()
+{
+	std::unique_ptr<MyClass> ptr1(new MyClass);
+}
+
+위 예제 코드에서 std::unique_ptr은 MyClass인스턴스를 소유한다.프로그램이 main함수의 범위를 벗어나면, std::unique_ptr는
+자동으로 소유한 객체를 삭제한다.이 떄문에 명시적으로 delete를 호출할 필요가 없다.
+
+특히 중요한 점은 std::uniaue_ptr은 복사를 허용하지 않는다는 것이다.즉, 다른 std::unique_ptr로 부터 소유권을 가져 올 수
+없다.대신, std::move함수를 사용해 소유권을 이전(transfer) 할 수 있다.
+
+ex)
+
+std::Unique_ptr<MyClass> ptr2 = std::move(ptr1);
+
+위 코드는 ptr1이 가지고 있던 소유권을 ptr2에게 이전한다. 이제 ptr1은 더이상 객체를 소유하지 않고, ptr2는 객체의 새로운
+소유자가 된다. 이렇게 std::unique_ptr은 런타임에서 안전하게 객체의 소유권을 이전하는 것을 가능케 한다.
+
+한편, std::unique_ptr은 성능 비용이 거의 없다. 이는 std::unique_ptr이 내부적으로 일반 포인터를 사용해 객체를 추적하기
+때문이다. 따라서, std::unique_ptr은 안전한 리소스 관리와 효율성을 동시에 달성하는 데 도음이 된다.
+
+2. std::unique_ptr의 기본 사용법
+ std::unique_ptr을 사용하는 것은 매우 간단하다. 다음은 std::unique_ptr의 기본 사용 방법에 대한 몇가지 예를 보여주는 C++
+코드이다.
+
+ex)
+
+#include <memory>
+#include <iostream>
+
+class MyClass
+{
+public:
+	MyClass(int value) : value_(value) { }
+	void PrintValue() { std::cout << "Value: " << value_ << "\n"; }
+private:
+	int value_;
+};
+
+int main()
+{
+	std::unique_ptr<MyClass> ptr1(new MyClass(5));
+	ptr1->PrintValue();
+
+	std::unique_ptr<MyClass>ptr2 = std::make_unique<MyClass>(10);
+	ptr2->PrintValue();
+
+	// std:: unique_ptr<MyClass> ptr3 = ptr2; // 이건 컴파일 에러를 만든다.
+	std::unique_ptr<MyClass>ptr3 = std::move(ptr2); // ptr2의 소유권이 ptr3로 옮겨진다.
+	ptr3->PrintValue();
+
+	return 0;
+}
+
+첫 번째 예제에서는 std::unique_ptr가 동적으로 할당된 MyClass객체를 소유한다. 이 때문에 명시적으로 delete를 호출할 필요가
+없다. std::unique_ptr가 범위를 벗어나면 자동으로 메모리를 해제한다.
+
+두번째 예제에서는 std::make_unique 함수를 사용하여 std::unique_ptr를 생성합니다. 이 방법이 좋은 이유는, 이 함수는 객체
+생성과 메모리 할당을 하나의 연산으로 결합하므로, 예외 안정성을 높일 수 있기 때문이다.
+
+세번쨰 예제에서는 소유권 이전을 시연하고 있다. std::unique_ptr는 복사가 허용되지 않지만, std::move를 사용하여 소유권을
+다른 std::unique_ptr로 이전 할 수 있다.
+
+마지막으로 std::unique_ptr는 객체의 멤버 함수에 적근하기 위해 일반 포인터처럼 -> 연산자를 사용 할 수 있다.
+
+std::unique_ptr은 C++의 중요한 특징인 RAII(Resource Acquisition Is Initialization)패턴의 일부로, 동적 메모리를 안전하게
+관리하는데 도움이 된다.
