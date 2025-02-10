@@ -613,3 +613,228 @@ int main()
 	std::cout << "ptr1 (use count " << ptr1.use_count() << ") at " << ptr1.get() << '\n';
 
 }	// Foo::~Foo가 이 지점에서 호출된다.
+
+위 코드에서 볼 수 있듯이, std::shared_ptr을 사용하면 동적 메모리의 생명주기를 안전하게 관리할 수 있다.더군다나, 코드가 복잡해지고 여러
+함수와 객체가 같은 메모리에 접근해야 할 때, 이러한 스마트 포인터의 이점은 더욱 두드러진다.
+
+다만, std::shared_ptr을 사용할 때 주의 할 점은 순환 참조 문제이다.서로가 서로를 가리키는 std::shared_ptr객체가 생성되면, 참조 카운터가
+절대 0이 되지 않아 메모리 누수가 발생한다.이런 상황을 막기 위해 '약한 포인터'인 std::weak_ptr를 사용 할 수 있다.
+
+2. std::shared_ptr의 기본 사용법
+
+std::shared_ptr을 사용하는 기본적인 방법에 대해 알아보자.먼저, 이 스마트 포인터 객체는 다음과 같이 생성할 수 있다.
+
+ex)
+
+std::shared_ptr<int> p1(new int(5));
+std::shared_ptr<int> p2 = std::make_shared<int>(5);
+
+여기서 std::make_shared를 사용하는 방법이 더 선호 되는데, 이유는 두가지이다.첫째, std::make_shared를 사용하면 메모리 할당이 한번만
+이루어져 성능을 향상 할 수 있다.둘째, 이 방식은 예외 안정성을 보장한다.
+
+ex)
+
+foo(std::shared_ptr<int>(new int(5)), function_may_throw());
+
+위 코드에서 function_may_throw()이 예외를 발생 시키면, 이미 할당된 new int(5)에 대한 메모리 누수가 발생할 수 있습니다.
+반면, std::make_shared를 사용하면 이러한 문제를 방지할 수 있다.
+
+ex)
+foo(std::make_shared<int>(new int(5), function_may_throw()); // 더 안전하고 선호되는 방식
+
+std::shared_ptr 객체는 다른 스마트 포인터나 일반 포인터로부터 복사하거나 이동할 수 있다.이때 참조 카운터가 적절히 조정된다.
+
+ex)
+std::shared_ptr<int> p3 = p2; //p3과 p2는 같은 객체를 가리키며, 참조 카운트는 2이다.
+
+다음으로, std::shared_ptr는 일반 포인터처럼 동작하며, 멤버 접근 연산자(->)와 역참조 연산자(*)를 사용 할 수 있다.
+
+ex)
+std::shared_ptr<std::string> p4 = std::make_shared<std::string>("Hello, World!");
+std::cout << *p4 << '\n';
+std::cout << p4-> size() << '\n' 
+
+std::shared_ptr을 사용하면 메모리 관리에 대한 걱정 없이 공유소유를 표현 할 수 있다.
+
+3. std::shared_ptr와 참조 카운팅
+
+std::shared_ptr의 핵심적인 특징 중 하나는 "참조 카운팅"이다. 참조 카운팅이란 std::shared_ptr객체가 생성되거나 이미 존재하는
+std::shared_ptr객체를 복사하면, 참조 카운트는 증가하며, std::shared_ptr 객체가 소멸되거나 다른 리소스를 가리키게 될 때 참조 카운트는
+감소한다.
+
+ex)
+std::shared_ptr<int> p1 =  std::make_shared<int>(5);
+std::shared_ptr<int> p2 = p1 // p1을 복사하면 참조 카운트가 증가한다.
+
+std::cout << "p1 use cout: " << p1.use_count() << '\n'
+std::cout << "p2 use cout: " << p2.use_count() << '\n'
+
+참조 카운트는 std::shared_ptr의 use_count() 메서드를 통해 알 수 있다. 하지만 이 메서드는 디버깅이나 학습 목적 외에 사용을 권장하지 않는데,
+그 이유는 use_count()의 반환 값이 순간적인 상태를 반영하기 떄문에 멀티스레드 환경에서는 신뢰 할 수 업시 때문이다.
+
+std::shared_ptr가 참조 카운트를 관리하는 방식 덕분에, 공유하는 모든 std::shared_ptr 객체가 사라지면, 즉 참조 카운트가 0이 되면 자동으로
+메모리가 해제된다. 이렇게 되면 메모리 누수를 걱정할 필요가 없다.
+
+ex)
+{
+	std::shared_ptr<int> p3 = std::makesared<int>(10);
+	{
+		std::shared_ptr<int> p4 = p3;
+	}
+
+	std::cout << *p3 << '\n';
+}
+
+이것이 바로 std:: shared_ptr와 참조 카운팅의 기본적인 원리이다. 이런 특성 덕분에 std::shared_ptr은 C++에서 자원 공유를 표헌하는 강력한
+도구이다.
+
+4. std::shared_ptr의 예제코드와 활용법
+
+이제 실제로 std::shared_ptr을 어떻게 사용하는지 살펴볼 차례이다. 아래 예제를 통해 기본적인 사용방법을 살펴본다.
+
+ex)
+#include <iostram>
+#include <memory>
+
+class MyObject
+{
+public:
+	MyObject() { std::cout << "Object created!\n"; }
+	~MyObject() { std::cout << "Object destroyed!\n" }
+};
+
+int main()
+{
+	std::shared_ptr<MyObject> ptr1 = std::make_shared<MyObject>();
+	{
+		std::shared_ptr<MyObject> ptr2 = ptr1;
+	}
+
+	return 0;
+}
+
+위 예제에서 MyObject라는 간다난 클래스를 생성했다. 이 클래스를 생성자와 소멸자에는 객체의 생성과 소멸을 알리는 메시지를 출력하는 코드가
+들어 있다.
+
+main 함수에서는 std::make_shared 함수를 이용하여 MyObejct객체를 생성하고 std::shared_ptr에 할당했다. 그리고 내부 블록에서 ptr1을 복사하여
+ptr2를 생성한다. 이렇게 되면 ptr1과 ptr2는 동일한 MyObject 객체를 가리키며, 참조 카운트는 2가 된다.
+
+내부 블록이 종료되면 ptr2가 소멸되고 참조 카운트는 1로 줄어든다. 하지만 여전히 ptr1이 MyObject객체를 가리키고 있으므로 객체는 소멸되지
+않는다. main함수가 종료되면 ptr1이 소멸되고 참조 카운트가 0이 되어, 이 시점에서 MyObject 객체가 소멸된다.
+
+이처럼 std::shared_ptr를 사용하면 자동으로 참조 카운트를 관리 해 주기 떄문에, 우리는 명시적으로 메모리를 해제해 주는 코드를 작성할 필요가
+없습니다. 또한 참조 카운트가 0이 되는 시점에서 객체가 소멸되므로 메모리 누수를 방지 할 수 있다.
+
+이 외에도 std::shared_ptr는 원시 포인터 처럼 사용 할 수 있다. 즉, *연산자를 이용하여 객체에 접근 할 수 있고, -> 연산자를 이용하여 객체의
+멤버에 접근 할 수 있다. 
+
+ex)
+#include <iostream>
+#include <memory>
+
+class MyObject
+{
+public:
+	MyObject(int val) : value(val) {}
+	int value;
+};
+
+int main()
+{
+	std::shared_ptr<MyObject> ptr = std::make_shared<MyObject>(10);
+	std::cout << "Value" << ptr->value << "\n";
+	return 0;
+}
+
+위 예제이서는 MyObject 객체에 value라는 멤버 변수를 추가했다.그리고 std::make_shared 함수를 이용하여 MyObject객체를 생성할 때 value를
+초기화 했다.이후 ptr->value를 이용하여 value에 접근하였다.
+
+따라서 std::shared_ptr를 이용하면 메모리 관리를 자동화 할 수 있으면서도 원시 포인터와 유사한 방식으로 코드를 작성 할 수 있다.이러한 특성
+덕분에 std::shared_ptr는 C++에서 자주 사용되는 스마트 포인터 중 하나이다.
+
+5. std::shared_ptr 예외 처리
+
+C++에서 예외처리는 중요한 부분...(아까 했던 이야기)
+이는 메모리 관리와 밀접한 관련이 있는데, std::shared_ptr은 이러한 문제를 처리하는데 유용한 도구이다.
+
+[예외와 메모리 누수]
+
+먼저, 예외와 메모리 누수에 대한 문제를 이해 해 보자.
+
+#inlcude <iostream>
+#include <stdexcept>
+
+class MyObject
+{
+public:
+	MyObject() {std::cout << "Object created!\n" }
+	~MyObject() {std::cout << "Object destroyed!\n" }
+};
+
+void riskyFunction()
+{
+	MyObject* obj = new MyObject();
+	throw std::runtime_error("Exception occurred!");
+	delete obj
+}
+
+int main()
+{
+	try
+	{
+		riskyFUntion();
+	}
+
+	catch (const std::exception& e)
+	{
+		std::cerr << "Caight exception: " << e.what() << '\n';
+	}
+
+	return 0;
+}
+
+위의 riskyFunction에서는 MyObject를 동적으로 생성하고, 이후에 예외를 발생시킨다.예외가 발생하면 delete obj; 코드는 실행되지 않고, 이로
+인해 메모리 누수가 발생한다.
+
+[std::shared_ptr를 사용한 안전한 코드]
+
+std::shared_ptr을 사용하면 위와 같은 문제를 쉽게 해결 할 수 있다. std::shared_ptr을 사용하여 객체를 생성하면, std::shared_ptr이 자동으로
+메모리를 관리하므로 명시적으로 delete를 호출할 필요가 없다. 이를 통해 메모리 누수를 방지 할 수 있다.
+
+ex)
+#include <iostream>
+#include <stdexcept>
+#include <memory>
+
+class MyObject
+{
+public:
+	MyObject() { std::cout << "Object created!\n"; }
+	~MyObject() { std::cout << "Object destroyed!\n"; }
+};
+
+void safeFunction()
+{
+	std::shared_ptr<MyObject> obj = std::make_shared<MyObject>();
+	throw std::runtime_error("Exception occurred!"):
+}
+
+int main()
+{
+	try {
+		safeFunction();
+	}
+
+	catch (const std::exception& e)
+	{
+		std:: cerr << "Caught exception: " << e.what << "\n"
+	}
+
+	return 0;
+}
+
+위 코드에서 safeFUnction은 std::shared_ptr을 사용하여 MyObject를 생성한다. 이후 예외가 발생하더라도 std::shared_ptr이 소멸 될 때,
+MyObject가 자동으로 삭제되므로 메모리 누수가 발생하지 않는다.
+
+이처럼 std::shared_ptr은 예외 안정성을 강화하는데 유용하다. 이 도구를 사용하면 예외 상황에서도 메모리 누수를 방지하고, 코드를 더 안전하게
+만들 수 있다.
