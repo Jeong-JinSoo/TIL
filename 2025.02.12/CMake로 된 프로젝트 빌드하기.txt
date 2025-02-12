@@ -1,0 +1,33 @@
+CMAKE 설치하기
+https://cmake.org/download/ 여기서 받을 수 있다.
+
+cmake gui project may invalid 문제
+코루틴 라이브러리 https://github.com/luncliff/coroutine.git를 넣으려고 하니까 저게 뜬다.
+
+supports __builtin_coro: TRUE
+CMake Error at CMakeLists.txt:53 (find_package):
+  Could not find a package configuration file provided by "fmt" with any of
+  the following names:
+
+    fmtConfig.cmake
+    fmt-config.cmake
+
+  Add the installation prefix of "fmt" to CMAKE_PREFIX_PATH or set "fmt_DIR"
+  to a directory containing one of the above files.  If "fmt" provides a
+  separate development package or SDK, be sure it has been installed.
+
+오류로그는 다음과 같은데
+
+__builtin_coro 지원: TRUE
+CMakeLists.txt:53(find_package)에서 CMake 오류:
+"fmt"에서 제공하는 패키지 구성 파일을 다음 이름 중 하나로 찾을 수 없습니다.
+
+fmtConfig.cmake
+fmt-config.cmake
+
+"fmt"의 설치 접두사를 CMAKE_PREFIX_PATH에 추가하거나 "fmt_DIR"을
+위 파일 중 하나가 포함된 디렉터리로 설정합니다. "fmt"에서 별도의 개발 패키지 또는 SDK를 제공하는 경우 설치되었는지 확인합니다.
+
+라고.
+
+왜 이러냐고!!!!

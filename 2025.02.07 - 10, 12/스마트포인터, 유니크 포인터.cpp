@@ -838,3 +838,208 @@ MyObject가 자동으로 삭제되므로 메모리 누수가 발생하지 않는다.
 
 이처럼 std::shared_ptr은 예외 안정성을 강화하는데 유용하다. 이 도구를 사용하면 예외 상황에서도 메모리 누수를 방지하고, 코드를 더 안전하게
 만들 수 있다.
+
+[std::weak_ptr에 대해]
+
+std::weak_ptr는 C++ 스마트 포인터 중 하나로, std::shared_ptr와 같이 참조 카운팅을 사용하지만, 참조 카운트에 영향을 주지 않는다. 이는 순환
+참조 문제를 방지하기 위해 사용된다. 순환 참조란 서로가 서로를 참조하는 상황으로, 스마트 포인터가 자동으로 메모리를 해제하지 못하게 만든다.
+std::weak_ptr를 사용하면 이러한 문제를 피할 수 있다.
+
+weak_ptr의 정의와 특징
+
+C++의 스마트 포인터 중 하나인 std::weak_ptr는 이름에서도 알 수 있듯이, '약한 포인터'를 의미 한다. 이 포인터는 std::shared_ptr와 연동되어
+작동하며, 가장 큰 특징은 참조 카운트에 영향을 미치지 않는다는 것이다. 즉, std::weak_ptr이 가리키는 객체를 참조하는 동안에는 해당 객체가
+메모리에서 사라지지 않지만, 참조 카운트에는 반영되지 않아 std::shared_ptr처럼 메모리 해제에 영향을 미치지 않는다.
+
+이 특징은 순환 참조 문제를 해결하는데 아주 중요한 역할을 한다. 순환 참조는 두 객체가 서로 참조 할 때 생기는 문제로, 이런 상황에서는 각 개체의
+참조 카운터가 0이 되지 않아 영원히 메모리에서 해제되지 않는 문제가 발생한다. std::weak_ptr이 소멸되었을 때 객체는 메모리에서 해제된다.
+
+ex)
+#include <iostream>
+#include <memory>
+
+struct MyClass
+{
+	std::weak_ptr<MtClass> ptr;
+	~MyClass() { std::cout << "MyClass destroyed\n"; }
+};
+
+int main()
+{
+	std::shared_ptr<MyClass> sp = std::make_shared<MyClass>();
+	sp->ptr = sp;
+
+	return 0;
+}
+
+이 코드에서는, MyClass 객체가 자신을 가리키는 weak_ptr을 멤버로 가지고 있다. 메인 함수에서는 shared_ptr을 생성하고, 이 shared_ptr이 자신을
+가리키게 한다. 그러나 이 경우에도 MyClass 객체는 프로그램이 종료 될 때 정상적으로 해제된다. 이것은 weak_ptr이 참조 카운트에 반영되지 않기
+떄문이다.
+
+이렇게 std::weak_ptr은 std::shared_ptr과 함께 사용하여 순환 참조 문제를 해결하는데 아주 중요한 도구이다. 
+
+참조 카운트에 반영되지 않는 std::Weak_ptr의 특성 떄문에, weak_ptr가 가리키는 객체를 직접 접근 할 수는 없다. 이를 위해서는 std::shared_ptr로
+변환해야 하는데, 이 과정을 '락(lock)'이라고 한다. std::weak_ptr의 lock메서드를 호출하여 std::shared_ptr를 얻을 수 있다.
+
+ex)
+
+#include <iostream>
+#include <memory>
+
+int main()
+{
+	std::shared_ptr<int> sp = std::make_shared<int>(123);
+	std::weak_ptr<int> wp = sp;
+
+	if (std::shared_ptr<int> locked = wp.lock())
+	{
+		std::cout << " *locked" << *locked << '\n';
+	}
+
+	else
+	{
+		std::cout << "wp is expired\n";
+	}
+
+	return 0;
+}
+
+이 코드에서는, 먼저 shared_ptr을 생성하고, 이를 weak_ptr로 복사한다.그런 다음 lock 메서드를 사용하여 weak_ptr에서 shared_ptr를 얻고, 이를
+통해 객체에 접근 한다.이 방법으로 객체가 아직 메모리에 있는지 확인 할 수 있다.만약 객체가 메모리에서 해제되었다면, lock 메서드는 빈
+shared_ptr를 반환한다.
+
+따라서, std::weak_ptr는 객체가 아직 메모리에 있는지 확인하는 데 사용 할 수 있는 훌룡한 도구이다.std::shared_ptr와 함께 사용하면, 메모리
+누수를 방지하고, 객체의 생명 주기를 안전하게 관리 할 수 있다.
+
+주목할 점은, std::weak_ptr는 객체에 접근 하기 전에 항상 lock 메서드를 호출하여 객체가 아직 메모리에 있는지 확인해야 한다는 것이다.이는
+std::weak_ptr의 핵심적인 특성이자 사용방법이다.
+
+2. weak_ptr의 기본 사용법
+
+C++의 std::weak_ptr는 공유된 소유권(std::shared_ptr)의 문제를 해결하기 위해 도입된 스마트 포인터이다.이 스마트 포인터는 참조 카운팅을
+증가시키지 않아 순환 참조 문제를 방지 할 수 있다.하지만, std::weak_ptr는 객체에 대한 '약한' 참조만을 제공하므로, 객체에 직접 접근하려면 먼저
+std::shared_pr로 변환해야 한다.이를 '락(lock)'이라고 부른다.
+
+먼저, std::weak_ptr을 생성하는 방법이다.std::weak_ptr는 기본적으로 std::shared_ptr 에서 생성된다.
+
+ex)
+std::shared_ptr<int> sp(new int(10));
+std::weak_ptr<int> wp(sp));
+
+위의 코드에서 wp는 sp가 소유한 객체를 가리키지만, 이는 '약한' 참조이므로 sp의 참조 카운트를 증가시키지 않는다. 즉, wp는 객체의 소유권을 가지지
+않는다.
+
+객체에 접근 하려면, 먼저 std::shared_ptr로 변환해야 한다. 이를 위해 std::weak_ptr의 lock메서드를 사용한다.
+
+ex)
+
+if (std::shared_ptr<int>sp = wp.lock()) // lock 메서드로 shared_ptr획득
+{
+	//객체에 접근
+}
+
+lock 메서드는 해당 객체가 아직 메모리에 있을 때 std::shared_ptr룰 반환하며, 그렇지 않을 때는 빈 std::shared_ptr를 반환한다. 따라서 lock
+메서드를 사용하여 객체가 메모리에 있는지 확인 할 수 있다.
+
+또한 std::weak_ptr는 expired 메소드를 제공하여 객체가 메모리에 있는지 확인 할 수 있다.
+
+ex)
+if (wp.expired())
+{
+	// 객체는 더 이상 메모리에 없음
+}
+
+하지만, 이 메소드는 객체의 상태를 확인하고 객체에 접근하는 사이에 객체가 해제 될 수 있으므로, 안전한 객체 접근을 위해서는 항상 lock 메서드를
+사용해야 한다.
+
+3. weak_ptr와 순환 참조 문제
+
+스마트 포인터는 메모리 관리를 현하게 해주지만, std::shared_ptr를 사용할 때 주의 해야 할 주요한 문제가 있다.바로 '순환참조(circular
+reference)' 문제이다. 이 문제는 서로가 서로를 참조하는 두개의 std::shared_ptr 객체가 있을 떄 발생한다. 이렇게 되면 참조 카운트는 결코 0이
+될 수 없으므로, 이러한 객체들은 메모리에서 절대 해제되지 않게 된다.이것이 바로 메모리 누수(memory leak)를 일으키는 원인이 된다.
+
+이 문제를 해결하기 위해서 std::weak_ptr가 등장했다.std::weak_ptr는 std::shared_ptr와 달리 참조 카운트를 증가시키지 않기 때문에 순환 참조를
+방지 할 수 있다.
+
+4. weak_ptr의 예제 코드와 활용법
+weak_ptr는 std::shared_ptr와 함께 사용되여 순호나 참조 문제를 해결하고, 특정 객체가 여전히 메모리에 존재하는지 판단 할 수 있는 방법을 제공
+한다.그렇다면 이제 std::weak_ptr의 기본적인 사용법과 예제 코드를 통해 실제로 어떻게 활용할 수 있는지 알아보자.
+
+먼저, std::weak_ptr는 기본적으로 std::shared_ptr에서 생성된다.
+
+ex)
+std::shared_ptr<int> sp(new int(10));
+std::weak_ptr<int> wp = sp;
+
+위의 코드에서 wp는 sp로 부터 생성된 std::weak_ptr이다.이때 wp는 sp가 가리키는 메모리에 대한 약한 참조(weak reference)를 가지게 된다.그러나
+wp는 참조 카운트를 증가시키지 않으므로, sp가 소멸되면 wp는 더 이상 유효한 참조를 가지지 않게 된다.
+
+그럼에도 불구하고 wp를 통해 안전하게 메모리에 접근하려면 어떻게 해야 할까요 ? 여기서는 std::weak_ptr의 lock함수를 사용 할 수 있다.lock 함수는
+std::shared_ptr를 반환하며, 이 std::shared_ptr를 통해 안전하게 메모리에 접근 할 수 있다.
+
+ex)
+std::shared_ptr<int> sp(new int(10));
+std::weak_ptr<int> wp = sp;
+
+if (auto p = wp.lock()) //wp가 유효한지 확인하고, 유효하다면 shared_ptr를 얻는다.
+{	// 안전하게 메모리에 접근 할 수 있다.
+	std::cout << *p << std::endl;
+}
+else
+{	// wp가 더이상 유효하지 않는 상태
+	std::cout << "wp is no longer valid << std::endl";
+}
+
+5. weak_ptr 예외 처리
+
+C++에서 std::weak_ptr를 사용하면서 예외 처리를 적절히 하는 것은 매우 종요하다.이는 weak_ptr가 가리키는 메모리에 접근 할 수 없을 때 생기는
+예외 상황을 처리하기 위함이다.
+
+std::weak_ptr는 std::shared_ptr가 가리키는 메모리에 대한 약한 참조를 가지므로, std::shared_ptr가 소멸 되면 std::weak_ptr는 더이상 유효한
+참조를 가지지 않게 된다.이렇게 std::weak_ptr가 더 이상 유효하지 않은 상태에서 메모리에 접근하려고 하면 문제가 발생한다.
+
+std::weak_ptr에서 제공하는 lock 함수를 이용하면 안전하게 메모리에 접근 할 수 있다.lock 함수는 std::shared_ptr를 반환하며, 이 std::shared_ptr
+를 통해 메모리에 접근 할 수 있다.만약 std::weak_ptr가 유효하지 않다면 lock 함수는 nullptr를 가리키는 std::shared_ptr를 반환한다.
+
+ex)
+std::shared_ptr<int> sp(new int()10);
+std::weak_ptr<int>wp = sp;
+
+sp.reset();	// sp를 reset하여 메모리를 해제한다.
+
+if (auto p = wp.lock())
+{
+	std::cout << *p << std::endl;
+}
+
+else
+{
+	std::cout << "wp is no longer valid" << std::endl;
+}
+
+위의 코드에서 wp.lock()은 std::shared_ptr를 반환한다. 만약 wp가 유효하다면 이 std::shared_ptr를 통해 메모리에 안전하게 접근 할 수 있다.
+반면 wp가 더 이상 유효하지 않다면, lock 함수는 nullptr를 가리키는 std::shared_ptr를 반환하므로 안전하게 예외 상황을 처리 할 수 있다.
+
+이처럼 std::weak_ptr는 lock 함수를 통해 안전하게 메모리에 접근 할 수 있게 해 주며, 더 이상 유효하지 않는 참조에 대한 예외 상황을 적절히 처리
+할 수 있다. 이러한 기능은 메모리 관리를 더욱 안전하고 효율적으로 만들어 준다.
+
+마지막으로, std::weak_ptr는 수환 참조와 같은 문제를 방지하면서도 동시에 안전하게 메모리를 관리 할 수 있게 해주는 매우 유용한 도구이다. 이를
+적절히 활용하여 프로그램의 안정성을 높일 수 있다.
+
+[사용자 정의 스마트 포인터]
+C++에서는 사용자 정의 스마트 포인터를 생성하여 프로그램의 특정 요구사항을 충족시킬 수 있다. 사용자 정의 스마트 포인터는 기본 제공되는
+std::unique_ptr, std::shared_ptr, std::weak_ptr등으로 충분하지 않은 경우에 유용하게 사용 할 수 있다. 이를 만들기 위해서는 연산자 오버로딩,
+생성자와 소멸자의 적절한 사용, 복사 생성자와 복사 대입 연산자의 관리 등에 대한 깊은 이해가 필요하다. 사용자 정의 스마트 포인터는 메모리 뿐
+아니라, 네트워크 연결이나 파일 핸들 등 다양한 자원을 관리 하는 데에도 활용 할 수 있다.
+
+1. 사용자 정의 스마트 포인터 구현하기
+
+우선, 사용자 정의 스마트 포인터가 필요한 이유를 알아보자. C++의 STL라이브러리는 이미 스마트 포인터 라이브러리를 제공하지만, 때로는 특정 요구
+사항을 충족하기 위해 사용자 정의 스마트 포인터를 만드는 것이 필요하다.
+
+사용자 정의 므사트 포인터를 만드는 기본적인 원칙은 소유권 정책을 구현하는 것이다. 즉, 언제 메로리를 할당하고, 언제 메모리를 해제할지에 대한
+로직을 만드는 것이다. 이것은 포인터의 생명주기를 관리하는 기능을 갖춘 클래스를 구현함으로써 달성 할 수 있다.
+
+가장 기본적인 사용자 정의 스마트 포인터의 구현은 다음과 같다.
+
+ex)
