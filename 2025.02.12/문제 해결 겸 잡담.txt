@@ -1,0 +1,74 @@
+cmake gui project may invalid 문제
+코루틴 라이브러리 https://github.com/luncliff/coroutine.git를 넣으려고 하니까 저게 뜬다.
+
+supports __builtin_coro: TRUE
+CMake Error at CMakeLists.txt:53 (find_package):
+  Could not find a package configuration file provided by "fmt" with any of
+  the following names:
+
+    fmtConfig.cmake
+    fmt-config.cmake
+
+  Add the installation prefix of "fmt" to CMAKE_PREFIX_PATH or set "fmt_DIR"
+  to a directory containing one of the above files.  If "fmt" provides a
+  separate development package or SDK, be sure it has been installed.
+
+오류로그는 다음과 같은데
+
+__builtin_coro 지원: TRUE
+CMakeLists.txt:53(find_package)에서 CMake 오류:
+"fmt"에서 제공하는 패키지 구성 파일을 다음 이름 중 하나로 찾을 수 없습니다.
+
+fmtConfig.cmake
+fmt-config.cmake
+
+"fmt"의 설치 접두사를 CMAKE_PREFIX_PATH에 추가하거나 "fmt_DIR"을
+위 파일 중 하나가 포함된 디렉터리로 설정합니다. "fmt"에서 별도의 개발 패키지 또는 SDK를 제공하는 경우 설치되었는지 확인합니다.
+
+라고.
+
+왜 이러냐고!!!!
+
+VS Cmake도 안돌아가고 Cmake 직접 받은것도 안돌아가면 어쩌란 말인가??????
+나의 가장 나쁜 버릇 중 하나는 문제가 생기면 바로 실증을 느낀다는 것이고,
+실증을 느끼면 그 상황을 회피한다는 것이다.
+
+이게 무슨 소리냐면 방금 휴대폰 보면서 30분 날려먹었다는거다.
+제발 정신 좀 차려!!
+
+다음은 이거 
+
+CMake Error at C:/Program Files/CMake/share/cmake-3.31/Modules/CMakeDetermineSystem.cmake:152 (message):
+  Could not find toolchain file: /scripts/buildsystems/vcpkg.cmake
+Call Stack (most recent call first):
+  CMakeLists.txt:2 (project)
+
+버연기가 힘들어 하는것 같아서 직역하면
+Could not find toolchain file: /scripts/buildsystems/vcpkg.cmake
+vcpkg.cmake가 없다는거 같음.
+이거 한번 설치 해봐겠다
+
+깔아서 경로 재설정 하니 된거 같았음. 그런데 최초의 오류가 다시 생긴다.
+fmt가 뭔데 계속 문제가 생기는거야?
+
+
+vcpkg로 설치할 수 있는 라이브러리 였대요
+
+다음엔 
+    spdlogConfig.cmake
+    spdlog-config.cmake
+
+이게 뜨는데
+설마 이거 하나하나 다 깐 다음에 이거 할 수 있나
+
+라이브러리 올린 사람의 readme를 보자.
+
+리콰이어멘트 없는데 뭐지
+일단 없다는거 다 깔아보자
+
+spdlog는 또 안깔려 뭐야
+error: building spdlog:x64-windows failed with: BUILD_FAILED
+
+빌드가 안된다는거 같은데
+https://learn.microsoft.com/ko-kr/vcpkg/troubleshoot/build-failures?WT.mc_id=vcpkg_inproduct_cli
+링크를 받았으니 확인해 봐야 겠다
