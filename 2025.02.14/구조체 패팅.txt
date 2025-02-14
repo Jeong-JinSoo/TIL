@@ -1,0 +1,34 @@
+구조체 패딩은 성능 향상을 위해 CPU가 접근하기 쉬운 위치 메모리에 구조체 필드를 배치하는 것이다.
+CPU는 메모리를 읽어 올 때 한번에 [32bit OS*] 4byte, [64bit OS]는 8byte를 읽어온다.
+
+아래와 같은 구조체가 선언되어있다.
+
+struct box
+{
+	char c;
+	long long ll;
+};
+
+이때 long long 타입의 ll 멤버 변수를 읽고자 하면
+32bit OS는 한번에 4byte씩 메모리를 읽기 때문에 메모리에 3번 접근이 필요하고
+64bit OS는 한번에 8byte씩 메모리를 읽기 때문에 메모리에 2번 접근이 필요하다.
+
+https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FYHlgK%2FbtrzpimqJ0q%2Fs3FGmFLIemZEWTNZNZ8dL0%2Fimg.png
+
+하지만 아래와 같이 구조체에 패딩 값을 넣어준다면
+
+https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FbutApc%2Fbtrzq50X761%2FtMJKqlshltXwXcE0JfUvGk%2Fimg.png
+
+패딩 비트의 크기만큼 메모리를 낭비하게 되지만, cpu가 ll을 읽어올 때 메모리에 접근 하는 수가 줄어들어 성능 저하를 막을 수 있다.
+(cpu연산 횟수 감소)
+
+하지만 네트워크를 통해 구조체를 전송하게 된다면 패딩 비트가 문제가 될 수 있다.
+구조체가 메모리에 정의되는 형태는 OS와 컴파일러에 따라 다르다.
+컴파일러에 따라 패딩비트의 삽입 위치가 다르고, OS의 bit 수에 따라 삽입하는 패딩 비트의 수가 다르다.
+
+따라서 서로 다른 메모리 정의를 가진 시스템 간 구조체를 주고받는다면
+패딩비트로 인해 구조체의 값이 달라질 수 있다.
+
+이를 해결하기 위한 두 가지 방법이 있는데,
+1. #pragma pack(push, n)을 이용해 컴파일러가 패딩 비트를 사용하지 않도록 한다.
+2. 개발자가 직접 패딩 비트를 삽입한다.

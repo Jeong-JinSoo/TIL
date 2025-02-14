@@ -1,0 +1,38 @@
+Byte Order (바이트 배열 순서)
+
+통신을 하다보면 통신 패킷이 반대로 나갈 때가 있다.
+예를 들면 1 2 3 4를 보냈는데 막상 받는 쪽에서 들어온 패킷은 4 3 2 1인 경우
+
+이는 컴퓨터 CPU의 데이터를 저장하는 순서에서 발생하는 오류이다.
+
+메모리에 어떠한 데이터를 저장할 때 큰 쪽을 앞 주소에 두느냐 뒷주소에 두느냐의 차이가 있다.
+저장 할 때 상위 바이트. 즉, 큰 쪽을 먼저 저장하는 것을 빅 엔디안(Big Endian),
+저장 할 때 하위 바이트. 즉, 작은 쪽을 먼저 저장하는 것을 리틀 엔디안(Eittle Endian) 이라고 한다.
+
+예를 들어 보자.
+컴퓨터에 int형 4byte 데이터 0x01020304를 저장한다고 했을 때
+빅 엔디안은 첫 번째 주소에 가장 큰 값인 0x01을 먼저 저장한다.
+리틀 엔디안은 첫 번째 주소에 가장 작은 값인 0x04를 저장한다.
+
+그림으로 표현하면 다음과 같다.
+https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2Fms6mK%2Fbtq0PdSPoSw%2Fkkv5ZlJL6K1eTeZU9IKmc1%2Fimg.png
+
+그렇다면 엔디안이 왜 중요한가? 왜 문제가 되는가?
+물론 같은 엔디안 사이의 통신에서는 문제가 되지 않는다.
+
+https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FvxeFb%2Fbtq0MU0Rbj3%2FVOXFkkVcZWdhulp0okNwV1%2Fimg.png
+
+읽는 방식과 쓰는 방식이 같기 때문에 문제 될 것이 없다.
+하지만 다른 방식의 엔디안 사이의 통신에서 비로소 문제가 발생한다.
+
+https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2Fbc9fPf%2Fbtq0Jw7fU5j%2FeZttlstDCTHdR7KXkZK4eK%2Fimg.png
+
+리틀 엔디안에서 0x1234는 저장 할 때 0x34 0x12로 저장이 되는데
+이를 그대로 빅 엔디안에 전송하게 되면
+빅 엔디안은 0x3412로 이해하기 때문에 문제가 발생한다.
+
+이러한 문제를 방지하기 위해서
+네트워크에서는 빅 엔디안으로 통일하도록 되어 있다.
+
+추가로, intel CPU는 리틀엔디안
+Sparc는 빅 엔디안을 사용한다.

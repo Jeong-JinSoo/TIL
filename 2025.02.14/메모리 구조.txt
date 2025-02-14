@@ -1,0 +1,102 @@
+오늘은 메모리 구조에 대해 한다
+근본적인 이유는 너 대답할 수 있어? 아뇨.
+내가 아는건 프로그램의 메모리는 스택과 힙이 있다는거
+스택에 코드영역이 들어가던가? 이것도 잘 모르겠다.
+alloc이나 new로 만드는 데이터들이 힙에 들어가고
+그냥그냥 만들어 지는거(매개변수라던가)는 스택에 들어간다는거.
+
+그래서 다시 공부한다.
+면접 때 자주 물어본다는데 대답은 할 수 있어야지.
+적어도 두단계 정도는 대답 할 수 있게 해야 하지 않을가
+
+메모리 구조
+
+프로그램이 실행되기 위해서는 먼저 프로글매이 메모리에 로드(load)되어야 하는데, 프로그램에서 사용되는 변수들을 저장할 메모리도 필요하다. 따라서 os는 프로그램의 실행을 위해 다양한 메모리 공간을 제공하고 있는데 대표적으로 프로그램이 OS로 부터 할당받는 메모리 공간은 다음과 같다.
+
+https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FloXrC%2FbtrDXoW35aY%2FsHXPYcuXWx1ZLMPiQIGWCK%2Fimg.png
+(메모장인 관계로 이미지는 링크로 대체. notion에 옮길때는 이미지로 넣기)
+
+코드(code)영역
+메모리의 코드 영역은 프로그램의 코드가 저장되는 영역으로 cpu는 코드 영역으로 CPU는 코드 영역에 저장된 명령어를 하나씩 가져가 처리한다.
+
+데이터(data)영역
+메모리의 데이터 영역은 프로그램의 전역변수와 정적변수가 저장되는 영역이며, 프로그램의 시작과 함께 할당되며, 프로그램이 종료하면 소멸한다.
+
+스택(stack)영역
+메모리의 스택영역은 함수의 호출과 관계되는 지역변수와 매개변수가 저장되는 영역이다. 스택영역은 함수의 호출과 함께 할당되며, 함수의 호출이 완료되면 소멸한다. 이렇게 스택에 저장되는 함수의 호출 정보를 스택 프레임이라 한다. 스택영역은 메모리의 높은 주소에서 낮은 주소의 방향으로 할당된다. (FILO)
+
+힙(heap)영역
+메모리의 힙영역은 사용자가 직접 관리 할 수 있는 메모리 영역이다. 사용자에 의해 메모리 공간이 동적으로 할당되고 해제된다. 힙영역은 메모리의 낮은 주소에서 높은 주소의 방향으로 할당된다. (FIFO)
+
+스택 프레임
+함수가 호출되면 스택에는 함수의 매개변수, 호출이 끝난 뒤 돌아갈 반환 주소값, 함수에서 선언된 지역 변수 등이 저장된다. 이렇게 스택 영역에 차례대로 저장되는 함수의 호출 정보를 스택 프레임이라 한다. 이러한 스택 프레임 덕분에 함수의 호출이 모두 끝난 뒤에, 해당 함수가 호출되기 이전의 상태로 되돌아 갈 수 있다.
+
+https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FcdG3Dj%2FbtrD0rZx0ut%2FVD3ro6GReiJOnyVgGpjaK1%2Fimg.png
+(이미지)
+
+void Func1();
+void Func2(int a, int b);
+void Func3(float a);
+
+int main()
+{
+    cout << "main" << endl;
+    Func1();
+    return 0;
+}
+
+void Func1()
+{
+    cout << "Func1" << endl;
+    Func2(1, 2); // Func1입장에서 Func2 모른다. >>> 위에서 함수 선언의 필요성
+}
+
+void Func2(int a, int b)
+{
+    cout << "Func2" << endl;
+    Func3(10);
+}
+
+void Func3(float a)
+{
+    cout << "Func3" << endl;
+}
+
+포인터의 필요성
+
+#include <iostream>
+using namespace std;
+
+int MultiplyBy(int a, int b);
+void PrintNumber(int result);
+
+// 전역변수 : data영역
+int globalValue = 0;
+
+void increaseHp(int hp){
+    hp = hp +1;
+}
+
+int main()
+{
+    // 지역변수 : stack 영역
+    int localValue = 0;
+    int a = 3;
+    int b = 4;
+    int result = MultiplyBy(a, b);
+    PrintNumber(result);
+    
+    //  [[매개변수][RET][지역변수], , ]
+    int hp =1;
+    cout << hp <<endl;
+    increaseHp(hp); // 진짜 hp가 아니라 복사된 hp의 값을 만지는 것.
+    cout << hp <<endl; // 그래서 hp와 아무 상관없다.
+    
+    return 0;
+}
+
+변수를 전역변수로 사용하면 언제 어디서든 접근 할 수 있어 편하긴 하지만, 메모리 효율성 등 변수가 많아지면 여러 문제가 생겨, 최대한 지역변수로 선언해 사용하는 것이 좋다.
+
+increasHp(hp)함수에서 매개변수 hp를 받을 때 바로 위에서 선언한 hp를 받는 것이 아니라 hp를 복사한 hp(이름만 같지 다른 놈)을 받아서 쓴다. 즉, 복사한 hp가 아니라 진짜 hp를 사용하려면 포인터의 개념이 필요하다.
+
+https://returnclass.tistory.com/213
