@@ -1,0 +1,66 @@
+std::map이란
+stl의 map은 key-value 쌍으로 데이터를 저장하는 연관 컨테이너 이다. map은 C++에서 트리로 구현되어 있으며, 레드-블랙 트리를 사용한다.
+
+특징
+- map은 key-value쌍으로 데이터를 저장하기 때문에, key와 value를 모두 저장한다.
+- map은 데이터를 key값의 오름차순으로 정렬하여 저장한다.
+- map은 key값이 중복될 수 없다. key 값은 유일해야 한다.
+
+장단점
+장점
+- map은 key를 기준으로 데이터를 정렬하여 저장하기 때문에, 데이터를 빠르게 삽입하고 삭제할 수 있다.
+- map은 key-value 쌍으로 데이터를 저장하기 때문에, 데이터를 빠르게 삽입하고 삭제할 수 있다.
+- map은 데이터를 저장 할 때, key값이 중복 될 수 없다. 이를 통해 데이터 중복을 방지할 수 있다.
+
+단점
+- map은 데이터를 정렬하여 저장하기 때문에, 데이터를 삽입하거나 삭제할 때, 정렬을 유지하기 위한 추가적인 작업이 필요하다. 이로 인해 삽입 및 삭제 연산이 느릴 수 있다.
+- map은 데이터를 검색할 때, 이진 탐색 알고리즘을 사용하기 때문에, 검색 속도가 O(log)이다. 이는 unordered_map과 비교했을 때 상대적으로 느리다.
+
+시간복잡도
+1. 접근 - O(log n)
+map은 key값으로 데이터를 저장하기 때문에, key값을 알고 있다면 O(log n)의 시간복잡도로 해당 데이터에 접근 할 수 있다.
+
+2. 검색 - O(log n)
+map에서 데이터를 검색하는 경우, 이진 탐색 알고리즘을 사용하기 때문에 O(log n)의 시간 복잡도를 갖는다.
+
+3. 삽입 및 삭제 - O(log n)
+map에서 데이터를 삽입하거나 삭제하는 경우, 데이터를 정렬하여 저장하기 때문에 정렬을 유지하기 위한 추가적인 작업이 필요하다. 따라서, 삽입 및 삭제 연산의 시간복잡도는 O(log n)이다.
+
+사용법
+1. 초기화
+map<key_type, value_type> my_map;	// default constructor를 사용하여 초기화 하는 방법
+map<key_type, value_type> my_map =
+ {
+	{key1, value1},
+	{key2, value2},
+	{key3, value3},
+	...
+}; // initializer list를 사용하여 초기화 하는 방법
+
+map<key_type, value_type> my_map;
+my_map.insert(std::make_pair(key1, value1));
+my_map.insert(std::make_pair(key2, value2));
+my_map.insert(std::make_pair(key3, value3)); 
+// insert() 함수를 사용하여 초기화하는 방법
+
+map<key_type, value_type> old_map;
+//...
+map<key_type, value_type> new_map(old_map);
+// copy constructor를 사용하여 초기화하는 방법
+
+<<멤버함수는 docs 참고.>>
+
+std::unordered_map
+stl에서 제공하는 해시 자료구조이다. 검색( find or at)/ 삭제(erase) 삽입(insert)이 O(1)에 처리 될 수 있다.
+std::map보다 빠른 탐색을 할 수 있는 자료구조이며 이는 map은 내부가 이진탐색 트리로 이루어져 있으므로 탐색에서의 시간 복잡도가 O(log n)이다.
+
+unordered_map은 데이터를 저장할 때, 정렬작업을 수행하지 않는다. 따라서, map보다 빠른 검색을 가능하게 한다. map과 같이, 중복된 데이터를 허용하지 않으면서, map보다 더 많은 데이터를 다룰 때 더 좋은 성능을 보여준다.
+map과 사용방법은 크게 다르지 않다.
+
+기존 std::map과 std::orderd_map의 비교.
+기존 std::map은 요소가 자동으로 오름차순으로 정렬되는 이진탐색 트리(BST)기반의 map이었다. 정확히 말하면 Red-black-tree라는 스스로 균형을 맞추는 이진 탐색 트리의 일종이다. 여기서 주목해야 하는 것은 오름 차순이 아니라 정렬이 자동으로 된다는 것이다. 기존 map은 필요하지 않은 경우에도 자동으로 정렬이 되었기 때문에 불필요하게 감수해야 하는 오버헤드가 있었다.
+
+C++11에서 추가된 unorderd_map
+C++11에서 해시맵 기반의 unorderd_map이라는 컨테이너가 등장했고, 기존의 std::map과 달리 이진 탐색 트리가 아닌 해시 테이블로 구현되어 있다. 때문에 요소를 자동으로 정렬하지 않으며 요소의 검색, 삽입, 삭제 연산이 평균적으로 상수시간에 가능하다. 
+(이는 std::set <--> std::unordered_set도 동일한 관계이다.)
+
