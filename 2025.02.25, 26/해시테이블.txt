@@ -1,0 +1,19 @@
+[unordered_map의 내부 동작]
+기본적으로 해시맵과 동일하므로 해시맵의 동작 방식을 살펴보아야 한다. 앞으로 해시맵 또는 그냥 맵이라고 부른다. 일단 map이라는 것은 key에 value를 매칭시켜 pair(쌍) 형태로 데이터를 저장하는 연관 컨테이너이다. 따라서 각 요소는 pair<key, value> 형태로 저장되며 우리는 key를 통해 value에 접근 할 수 있다.
+
+https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2Fz5f3g%2FbtqCKArilrg%2FakGvKzkWwAiMbopryyMIlK%2Fimg.png
+(이미지)
+
+여기까진 맵의 기본적인 특징이고, 해시맵의 특징은 바로 key를 통한 value로의 접근이 빠르다는 것이다. 그 이유가 바로 hash때문이다. hash는 다음과 같이 어떠한 데이터를 특정 연산을 통해 특별한 값(해시값)으로 변환 시켜주는 개념이다.
+
+https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FbPmCmW%2FbtqCKg7E8OY%2FSwYFvXkxemJI6XzRraECmK%2Fimg.png
+(이미지)
+
+hash 연산을 하는 함수를 해시 함수라 하며 해시 알고리듬은 MD5, SHA같이 여러종류의 알고리즘이 존대한다. 해시맵은 해시함수를 통해 key를 특정 값으로 변환 시키고 이 값을 value를 저장할 공간의 인덱스로 사용한다. 저장되는 공간은 보통 bucket또는 slot이라고 부르며 다음 그림과 같이 저장된다.
+
+https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FbGm0cS%2FbtqCNFEUyk9%2F2rcyQv7sG3opNYivGmS9zK%2Fimg.png
+(이미지)
+
+"Hi"라는 데이터를 동일한 해시 함수에 넣으면 항상 23이라는 데이터를 반환한다. 사실 함수마다 다르지만 원래는 해시 함수의 반환값을 bucket size로 나눈 나머지 값(mod)를 인덱스로 사용하는 방법도 있다. 그러면 무조건 [0, buckersize] 범위의 인덱스가 나오니까. 어쨌든 이는 key를 통해 value가 저장된 인덱스에 상수시간에 접근 할 수 있다는 걸 뜻한다. 즉 O(1)의 시간 복잡도를 가진다는 말이다. 물론 사용하는 해시함수의 시간 복잡도가 key-value쌍의 개수에 영향을 받아선 안될 것이다. 해시 함수가 아닌 key를 직접 비교해가며 value를 찾는다면 위 그림에선 24번 비교해야 23번 인덱스의 값에 접근 할 수 있을 것이다.
+
+정리해보면 만약 "apple" - "samsung"을 쌍으로 저장하고 싶다면 "apple"을 해시 함수에 넣어 인덱스를 얻고 그 인덱스에 "samsung"이라는 value를 저장한다. 만약 "apple"의 value를 읽어오고 싶다면 똑같이 "apple"을 해시 함수에 넣어 인덱스를 얻은 뒤 bucket에서 읽어오면 된다. 참고로 역은 성립하지 않아서 해시 값을 통해 역으로 "hi"라는 데이터에 접근 할 순 없다.
