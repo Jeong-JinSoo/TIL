@@ -1,0 +1,75 @@
+C++에서 struct와 class는 모두 사용자 데이터 타입을 정의 할 때 사용된다. 둘다 데이터 멤버와 함수를 가질 수 있다. 그러나 일반적으로 struct는 데이터의 집합체로 사용되며, class는 객체 지향 프로그래밍에서 객체의 정의를 위해 사용된다.
+
+stuct와 class의 주요 차이점은 기본 접근 제어 수준이다.
+struct는 기본적으로 public으로 정의되며, class는 기본적으로 private으로 정의된다. 이것은 struct는 멤버 변수 및 함수가 외부에서 쉽게 엑세스 될 수 있지만, class는 멤버 변수 및 함수에 대한 직접적인 엑세스를 제한한다.
+
+또한, class는 상속, 다형성 및 캡슐화와 같은 객체 지향 개념을 더 잘 지원한다. 이러한 이유로, 클래스는 대개 객체 지향 프로그래밍에서 사용되며, struct는 단순한 데이터의 집합체를 나타내기 위해 사용된다.
+
+struct 사용 예시
+
+struct는 일반적으로 단순한 데이터 집합체를 나타내기 위해 사용한다.
+아래 2차원 평면에서 좌표를 나타내는 sturct의 예시이다.
+
+#include <iostream>
+using namespace std;
+
+sturct point 
+{
+	int x;
+	int y;
+};
+
+Point addPoints(Point p1, Point P2)
+{
+	Point result;
+	result.x = p1.x + p2.x;
+	result.y = p1.y + p2.y;
+	return result;
+}
+
+int main()
+{
+	Point p1 = {1, 2};
+	Point p2 = {3, 4};
+	Point sum = addPoints(p1, p2);
+	cout << "Sum of points: (" << sum.x << sum.y << ")" << endl;
+}
+
+Class사용 예시
+위 예제를 class로 변경해본다.
+
+#include <iostream>
+using namespace std;
+
+class point
+{
+private:
+	int x:
+	int y:
+public:
+	Point(int _x, int _y) 
+	{
+		int newX = x + otherPoint.x;
+		int newY = y + otherPoint.y;
+		Point result(newX, newY);
+		return result;
+	}
+
+	int getX()
+	{
+		return x;
+	}
+
+	int getY()
+	{
+		return y;
+	}
+}
+
+int main()
+{
+	Point p1(1, 2);
+	Point p2(3, 4);
+	Point sum = p1.addPoints(p2_
+	cout << "Sum of points: (" << sum.getX( ) << "." << sum,getY( ) << ")" << endl;
+}
