@@ -192,9 +192,9 @@ D3D11CreateDeviceAndSwapChain()
 
 		HRESULT D3D11CreateDeviceAndSwapChain(
 			IDXGIAdapter * pAdapter,
-			D3D_DRIVER_TYPE 드라이버 유형,
-			HMODULE 소프트웨어,
-			UINT 플래그,
+			D3D_DRIVER_TYPE DriverType,
+			HMODULE Software,
+			UINT Flags,
 			D3D_FEATURE_LEVEL * pFeatureLevels,
 			UINT FeatureLevels,
 			UINT SDKVersion,
@@ -206,3 +206,123 @@ D3D11CreateDeviceAndSwapChain()
 -------------------------------------------------------------------------------------------
 
 이제 이 함수의 매개변수로 들어가 보자.
+
+IDXGIAdapter *pAdapter,
+    이는 Direct3D가 어떤 그래픽 어댑터를 사용해야 하는지를 나타내는 값이다. 그래픽 어댑터는 일반적으로 GPU와 비디오
+    메모리, 디지털-아날로그 변환기 등을 말한다.
+
+    여기서는 DXGI가 처리하도록 하고 넘어간다.(대부분의 경우 하나이기 때문이다.) DXGI에 결정해야 한다는 것을 알리기
+    위해 이 매개변수에 NULL을 사용하여 기본 어댑터를 나타낸다.
+
+D3D_DRIVE_TYPE DriverType
+    이 매개변수는 Direct3D가 렌더링에 하드웨어를 사용해야 하는지 소프트웨어를 사용해야 하는지를 결정하는데 사용된다.
+    이를 결정하는 데 사용 할 수 있는 여러 플래그가 있다.
+
+	D3D_DRIVER_TYPE_HARDWARE	가장 무난한 선택이다. 이것은 렌더링을 위해 고급 GPU 하드웨어를 사용한다.
+
+	D3D_DRIVER_TYPE_REFERENCE	모든 사람이 Direct3D 11을 실행할 수 있는 하드웨어를 가지고 있는 것이 아니므로,
+                                그런 사람이 Ditct3D 11기능을 실행하고 싶다면 이 플래그를 사용해야 한다. 느리지만
+                                적어도 실행된다.
+
+	D3D_DRIVER_TYPE_SOFTWARE	선택적으로 소프트웨어 기반 렌더링 엔진을 직접 빌드 할 수 있다. 이는 보통 매우느리
+                                다.
+
+	D3D_DRIVER_TYPE_WARP	WARP 이전 direct3D 기능을 실행하는 고성능 소프트웨어 엔진이다.
+
+	D3D_DRIVER_TYPE_NULL	렌더링을 하지 않는 경우 사용 가능. Direct3D렌더링 외 프로그램 동작을 위해 GPU의 성능
+                            에 엑세스 하는 상황에 사용된다.
+
+HMODULE Software
+    이 매개변수는 지금 다루지 않는다. D3D_DRIVER_TYPE_SOFTWARE 플래그와 함께 사용되어 소프트웨어 코드를 설정한다.
+
+UNIT Flags
+    플래그. 어렵지 않다. 여기에는 Direct3D가 실행되는 방식을 변경 할 수 있는 몇가지 플래그 값이 있다. 이러한 플래그
+    는 서로 OR로 함께 사용 할 수 있다. 다행히도 이러한 플래그 중 어느것도 필요하지 않다. 플래그는 여기 표에 나열되어
+    있다.
+
+    D3D11_CREATE_DEVICE_SINGLETHREADED  멀티스레드 렌더링은 기본적으로 활성되어 있다. 허용하지 않고 싶을 때 사용하
+                                        는 플래그이다.
+
+    D3D11_CREATE_DEVICE_DEBUG           디버깅을 활성화한다. DIrectX제어판에서도 애플리케이션의 디버깅을 활성화 해
+                                        야 할 수 있다. 디버그 메시지는 컴파일러의 출력창에 표시된다.
+
+    D3D11_CREATE_DEVICE_SWITCH_TO_REF   디버킹을 위해 런타임 중에 하드웨어 모드에서 참조 전환 모드로 전환 하는 것이
+                                        편리 할 수 있다. 이를 통해 프로그램에서 그렇게 할 수 있다.
+                                        
+    D3D11_CREATE_DEVICE_BGRA_SUPPORT    이를 통해 Direct2D는 Direct3D와 함께 작업 할 수 있다. Direct2D는 2D 이미
+                                        지만 렌더링 하는 별도의 그래픽 라이브러리이다.
+
+D3D_FEATURE_LEVEL *pFeatureLevles
+    Direct3D의 각 주요 버전에는 필요한 일련의 비디오 카드 기능이 있다. 하드웨어가 요구 사항을 충족하는 버전을 알고
+    있다면 하드웨어의 기능을 더 쉽게 이해 할 수 있다. (고객이 다른 비디오 카드를 가지고 있다는 점을 감안할 때)
+
+    이 매개변수를 사용하면 기능 수준 목록을 만들 수 있다. 이 목록은 Direct3D에 프로그램에서 어떤 기능을 사용할지 알
+    려준다.
+
+UINT FeatureLevels
+    이 매개변수는 목록에 있는 기능 레벨의 수를 나타낸다.
+
+UINT SDKVersion
+    이 매개변수는 항상 D3D11_SDK_VERSION과 동일하다. 왜 그럴까? 다른 기계와의 호환성에서 중요하다. 각 기계는 일
+    반적으로 DirectX의 다양한 마이너 버전을 갖는다. 이는 사용자의 DIrectX에 게임을 개발한 버전을 알려준다. 그러
+    면 사용자의 DirectX는 뒤돌아보고 그 이후로 발생한 변경 사항을 구련하지 않고도 프로그램을 제대로 실행할 수 있
+    다.
+
+DXGI_SWAP_CHAIN_DESC *pSWapChainDesc
+    이것은 스왑 체인 구조체에 대한 포인터이다. 우리는 이것을 '& scd'로 채운다.
+
+IDXGISwapChain **psWapChainDesc
+    이것은 스왑체인 객체에 대한 포인터를 가리킨다. 이 함수는 우리를 위해 객체를 생성하고 객체의 주소는 이 포인터에 
+    저장된다.
+
+ID3D11Device **ppDevice
+    이것은 장치 객체에 대한 포인터를 가리키는 포인터이다. 우리는 포인터를 dev로 정의 했으므로 이 매개변수에 &dev를
+    넣는다.
+
+D3D_FEATURE_LEVEL* pFeatureLevel
+    FeatureLevel에 대한 추가정보. 이것은 FeatureLevel변수에 대한 포인터이다. 함수가 완료되면 변수는 발견된 가장 높
+    은 기능 수준의 플래그로 채워진다. 이를 통해 프로그래머는 사용 할 수 있는 하드웨어를 알 수 있다. 이것을 NULL로 설
+    정한다.
+
+ID3D11DeviceContext** ppDeviceContext
+    이것의 장치 컨텍스트 개체에 대한 포인터를 가리키는 포인터이다. 이 포인터를 'devcon'으로 정의 했으므로 이 매개변수
+    에 '&devcon'을 넣는다. 그러면 DeviceContext개체의 주소로 채워진다.
+
+    변수 설정을 완료하면 다음과 같이 입력할 수 있다.
+-------------------------------------------------------------------------------------------
+
+D3D11CreateDeviceAndSwapChain(NULL,
+                              D3D_DRIVER_TYPE_HARDWARE,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL,
+                              D3D11_SDK_VERSION,
+                              &scd,
+                              &swapchain,
+                              &dev,
+                              NULL,
+                              &devcon);
+
+-------------------------------------------------------------------------------------------
+
+Driect3D 닫기
+    Direct3D가 생성 될 때 마다 닫아야 한다. 이는 매우 간단하다.
+
+    여기에는 세 가지 명령만 있다.
+
+	// 이것은 Direct3D와 COM을 정리하는 함수입니다 
+	void CleanD3D()
+{
+	// 모든 기존 COM 객체를 닫고 해제합니다 
+	swapchain->Release();
+	dev->Release();
+	devcon->Release();
+}
+
+여기서 우리가 만든 세 인터페이스, dev, devcon, swapchain 각각에서 Release() 함수를 호출한다. 매개변수도 없고 특별
+한 것도 없다. 그냥 모든 것을 정리한다.
+
+기본적으로 COM객체를 생성했지만 닫지 않으면 프로그램 자체가 닫힌 후에도 다음 재부팅까지 컴퓨터의 백그라운드에서 계속
+실행된다. 이건 좋지 않은 일이다. 득히 게임의 리소스가 많은 경우 더 나쁘다. COM 객체를 해제하면 모든 것이 풀리고
+Windows가 메모리를 다시 가져올 수 있다.
