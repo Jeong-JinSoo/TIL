@@ -326,3 +326,171 @@ Driect3D 닫기
 기본적으로 COM객체를 생성했지만 닫지 않으면 프로그램 자체가 닫힌 후에도 다음 재부팅까지 컴퓨터의 백그라운드에서 계속
 실행된다. 이건 좋지 않은 일이다. 득히 게임의 리소스가 많은 경우 더 나쁘다. COM 객체를 해제하면 모든 것이 풀리고
 Windows가 메모리를 다시 가져올 수 있다.
+
+완성된 프로그램
+    
+    코드를 실행하기 전에 주의해야 할 점이 몇가지 있다.
+
+    첫째, 아직 DirectX 11과 호환되는 비디오 카드가 없다면 하드웨어 모드 대신 참조 모드를 사용해야 한다.
+    (작성당시, 이 컴퓨터는 RTX4060을 장착하고 있으므로 의미 없다. 노트북은 INTEL HD GRAPICS 620이지만, 돌아가는 것
+     을 확인함.)
+
+    둘째, 모든 버전의 Visual Stuidio가 헤더 파일과 라이브러리 파일을 올바르게 찾는것은 아디ㅏ. d3d11.h를 찾을 수 없
+    다는 오류가 발생하면 직접 오류를 수정해야 한다.
+
+    이제 프로그램일 실행하면, 빈 창이 나온다. 이때 Direct3D는 백그라운드에서 실행한다.
+
+    [코드 전문]
+// 기본 Windows 헤더 파일  과 Direct3D 헤더 파일을 포함합니다 . 
+#include <windows.h>
+#include <windowsx.h> 
+#include <d3d11.h> 
+#include <d3dx11.h> 
+#include <d3dx10.h> 
+
+// Direct3D 라이브러리 파일을 포함합니다. 
+#pragma comment (lib, "d3d11.lib") 
+#pragma comment (lib, "d3dx11.lib") 
+#pragma comment (lib, "d3dx10.lib") 
+
+// 전역 선언 
+IDXGISwapChain* swapchain; // 스왑 체인 인터페이스에 대한 포인터 
+ID3D11Device* dev; // Direct3D 장치 인터페이스에 대한 포인터 
+ID3D11DeviceContext* devcon; // Direct3D 장치 컨텍스트에 대한 포인터 
+
+// 함수 프로토타입 
+void InitD3D(HWND hWnd); // Direct3D를 설정하고 초기화합니다. 
+void CleanD3D(void); // Direct3D를 닫고 메모리를 해제합니다
+
+// WindowProc 함수 프로토타입 
+LRESULT 콜백 WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+
+// 모든 Windows 프로그램의 진입점 
+int WINAPI WinMain(HINSTANCE hInstance,
+	HINSTANCE hPrevInstance,
+	LPSTR lpCmdLine,
+	int nCmdShow)
+{
+	HWND hWnd;
+	WNDCLASSEX wc;
+
+	ZeroMemory(&wc, sizeof(WNDCLASSEX));
+
+	wc.cbSize = sizeof(WNDCLASSEX);
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+	wc.lpfnWndProc = WindowProc;
+	wc.hInstance = hInstance;
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+	wc.lpszClassName = L"WindowClass";
+
+	RegisterClassEx(&wc);
+
+	RECT wr = { 0, 0, 800, 600 };
+	AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
+
+	hWnd = CreateWindowEx(NULL,
+		L"WindowClass",
+		L"첫 번째 Direct3D 프로그램",
+		WS_OVERLAPPEDWINDOW,
+		300,
+		300,
+		wr.right - wr.left,
+		wr.bottom - wr.top,
+		NULL,
+		NULL,
+		hInstance,
+		NULL);
+
+	ShowWindow(hWnd, nCmdShow);
+
+	// Direct3D 설정 및 초기화 
+	InitD3D(hWnd);
+
+	// 메인 루프로 이동: 
+
+	MSG msg;
+
+	while (TRUE)
+	{
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+
+			if (msg.message == WM_QUIT)
+				break;
+		}
+		else
+		{
+			// 여기서 게임 코드를 실행합니다 
+			. // ... 
+			// ... 
+		}
+	}
+
+	// DirectX 및 COM 정리 
+	CleanD3D();
+
+	return msg.wParam;
+}
+
+
+// 이것은 프로그램의 주요 메시지 처리기입니다. 
+LRESULT 콜백 WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+		case WM_DESTROY:
+		{
+			PostQuitMessage(0);
+			return 0;
+		} break;
+	}
+
+	return DefWindowProc(hWnd, message, wParam, lParam);
+}
+
+
+// 이 함수는 Direct3D를 초기화하고 사용할 수 있도록 준비합니다. 
+void InitD3D(HWND hWnd)
+{
+	// 스왑 체인에 대한 정보를 보관할 구조체를 만듭니다 
+	. DXGI_SWAP_CHAIN_DESC scd;
+
+	// 사용을 위해 구조체를 지웁니다 
+	ZeroMemory(&scd, sizeof(DXGI_SWAP_CHAIN_DESC));
+
+	// 스왑 체인 설명 채우기 struct 
+	scd.BufferCount = 1; // 백 버퍼 하나 
+	scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // 32비트 색상 사용 
+	scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // 스왑 체인 사용 방법 
+	scd.OutputWindow = hWnd; // 사용할 창 
+	scd.SampleDesc.Count = 4; // 멀티 샘플 수 
+	scd.Windowed = TRUE; // 창 모드/전체 화면 모드 
+
+	// scd 구조체에 있는 정보를 사용하여 장치, 장치 컨텍스트, 스왑 체인을 생성합니다 . 
+	D3D11CreateDeviceAndSwapChain(NULL,
+		D3D_DRIVER_TYPE_HARDWARE,
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		D3D11_SDK_VERSION,
+		&scd,
+		&swapchain,
+		&dev,
+		NULL,
+		&devcon);
+}
+
+
+// 이 함수는 Direct3D와 COM을 정리합니다. 
+void CleanD3D(void)
+{
+	// 모든 기존 COM 객체를 닫고 해제합니다. 
+	swapchain->Release();
+	dev->Release();
+	devcon->릴리스();
+}
