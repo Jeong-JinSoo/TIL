@@ -262,3 +262,168 @@
 			만, 만들고 싶은 종류는 정점 버퍼이다. 이를 위해 D3D11_BIND_VERTEX_BUFFER 플래그를 사용하면 된다.
 
 			다른 플래그는 이 수업에서는 좀 더 고급이므로 여기서 당장은 다루지 않는다.
+
+		bd.CPUAccessFlags
+			이 멤버는 Direct3D에 CPU에 엑세스 하는 방법을 알려줌으로써 사용 플래그에 대한 설명을 추가합니다. 여기서
+			유일한 플래그는 D3D11_CPU_ACCESS_WRITE와 D3D11_CPU_ACCESS_READ이며, 표 2.1과 일치하도록만 사용할 수
+			있다.
+
+			시스템 메모리에서 버퍼로 데이터를 복사하려고 하므로 D3D11_CPU_ACCESS_WRITE를 사용한다.
+
+		dev->CreateBuffer(&bd, NULL, &pVBuffer);
+			버퍼를 만드는 함수이다. 첫 번째 매개변수는 설명 구조체의 주소이다. 두 번째 매개 변수는 생성 시 특정 데이
+			터로 버퍼를 초기화하는 데 사용할 수 있지만 여기서는 NULL로 설정했다. 세번째 매개변수는 버퍼의 객체 주소
+			이다. 여기서 pVBuffer는 정점 버퍼에 대한 포인터를 의미한다.
+
+	정점 버퍼 채우기
+		이제 삼각형의 정점이 몇개 있고, 정점을 넣을 정점 버퍼도 있다. 이제 해야 할 일은 정점을 버퍼에 복사하는 것 뿐
+		이다.
+
+		그러나 Direct3D는 백그라운드에서 버퍼와 함께 작업 할 수 있으므로 CPU가 직접 버퍼에 액세스 할 수 없다. 버퍼에
+		엑세스하려면 버퍼를 메핑해야 한다. 즉, Direct3D는 버퍼에 수행되는 모든 작업을 완료한 다음 버퍼가 매핑 해제 될
+		때 까지 GPU가 버퍼와 함께 작업하는 것을 차단한다.
+
+		따라서 정점 버퍼를 채우려면 다음을 수행한다.
+
+		1. 정점 버퍼를 매핑한다. (그러면 버퍼의 위치를 얻는다.)
+		2. 데이터를 버퍼에 복사한다.(memcpy()를 사용한다.)
+		3. 버퍼의 매핑을 해제한다.
+
+		코드에서는 다음과 같다.
+
+		D3D11_MAPPED_SUBRESOURCE ms;
+		devcon->Map(pVBuffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms); // 버퍼 매핑 
+		memcpy(ms.pData, OurVertices, sizeof(OurVertices)); // 데이터 복사 
+		devcon->Unmap(pVBuffer, NULL); // 버퍼 매핑 해제
+
+		D3D11_MAPPED_SUBRESOURCE ms;
+			이것은 우리가 버퍼를 매핑하면 버퍼에 대한 정보로 채워질 구조체이다. 이 정보에는 버퍼의 위치에 대한 포인
+			터가 포함되며, "ms.pData"를 사용하여 이 포인터에 엑세스 할 수 있다.
+
+		devcon->Map()
+			다음 줄은 버퍼를 매핑하여 접근 할 수 있게 해준다. 매개변수는 꽤 쉽다.
+			첫 번째는 버퍼의 객체의 주소이다. 버퍼 포인터는 pVBuffer라고 불리므로 그것을 사용한다.
+			두 번째는 고급이다. 나중에 다룬다. 지금은 NULL로 설정해둔다.
+			세 번째 매개변수는 매핑되는 동안 버퍼에 대한 CPU액세스를 제어할 수 있는 플래그 세트이다.
+			D3D11_MAP_WRITE_DUSCARD를 사용하려고 하지만 다른 플래그는 이 표에서 찾을 수 있다.
+
+
+		Flag	Description
+		D3D11_MAP_READ					버퍼는 CPU에서만 읽을 수 있다.
+		DXD11_MAP_WRITE					버퍼는 CPU에서만 쓸 수 있다.
+		DXD11_MAP_READ_WRITE			버퍼는 CPU에 의해 읽고 쓸 수 있다.
+		DXD11_MAP_WRITE_DISCARD			버퍼의 이전 내용은 지워지고, 새로운 버퍼가 쓰기를 위해 열린다.
+		DXD11_MAP_WRITE_NO_OVERWRITE	GPU가 부품을 사용하는 동안에도 버퍼에 더 많은 데이터를 추가할 수 있는 고
+										급 플래그.그러나 GPU가 사용하는 부품으로 작업해서는 안된다.
+
+		네 번째 매개 변수는 또 다른 플래그이다. NULL또는 D3D11_MAP_FLAG_DO_NOT_WAIT일 수 있다. 이 플래그는 GPU가
+		여전히 버퍼로 작업 중이더라도 프로그램을 계속 진행하도록 강제한다.
+
+		마지막 매개 변수는 D3D11_MAPPED_SUBRESOURCE 구조체의 주소이다. 함수는 여기서 지정한 구조체를 채워서 필요한
+		정보를 제공한다.
+
+		memcpy()
+			다음으로, 우리는 표전 memcpy()를 수행한다. 우리는 ms.pData를 목적지로, OurVertices(혹은 다른무언가)를
+			소스로, sizeof(OurVertices)를 크기로 사용한다.
+
+		devcon->Unmap()
+			마지막으로 버퍼를 언맵한다. 이렇게 하면 GPU가 버퍼에 다시 엑세스 할 수 있고 CPU가 다시 차단된다. 첫번째
+			매개변수는 버퍼(pVBuffer)이고 두 번째 매개변수는 고급(NULL)이다.
+
+이 섹션에서는 많은 새로운 코드를 다룬다. 모든 것을 마무리하고 더 간단하게 만들기 위해 이 모든 코드를 inGraphics()라
+는 별도의 함수에 넣었다. 전체 함수는 다음과 같다.
+
+struct VERTEX { FLOAT X, Y, Z; D3DXCOLOR Color; }; // 정점을 정의하는 구조체 
+			ID3D11Buffer* pVBuffer; // 정점 버퍼 
+
+			void InitGraphics()
+			{
+				// VERTEX를 사용하여 삼각형 생성 struct 
+				VERTEX OurVertices[] =
+				{
+					{0.0f, 0.5f, 0.0f, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f)},
+					{0.45f, -0.5, 0.0f, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f)},
+					{-0.45f, -0.5f, 0.0f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f)}
+				};
+
+
+				// 정점 버퍼 
+				D3D11_BUFFER_DESC 생성 bd;
+				ZeroMemory(&bd, sizeof(bd));
+
+				bd.Usage = D3D11_USAGE_DYNAMIC; // CPU와 GPU가 접근하는 쓰기 액세스 
+				bd.ByteWidth = sizeof(VERTEX) * 3; // 크기는 VERTEX 구조체 * 3 
+				bd.BindFlags = D3D11_BIND_VERTEX_BUFFER; // 정점 버퍼로 사용 
+				bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; // CPU가 버퍼에 쓸 수 있도록 허용 
+
+				dev->CreateBuffer(&bd, NULL, &pVBuffer); // 버퍼 생성 
+
+
+				// 정점을 버퍼에 복사 
+				D3D11_MAPPED_SUBRESOURCE ms;
+				devcon->Map(pVBuffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms); // 버퍼 매핑 
+				memcpy(ms.pData, OurVertices, sizeof(OurVertices)); // 데이터 복사 
+				devcon->Unmap(pVBuffer, NULL); // 버퍼 매핑 해제 
+			}
+
+이것은 3D 프로그래밍의 핵심 부분이며, 우리는 그것을 사용하고 진행하면서 꽤 많이 수정할 것이다. 이 시점에서 이 섹션을
+두 번 정도 살펴보고 정말로 이해했는지 확인하는 것이 좋다.
+
+입력 레이아웃 확인
+
+	지금까지 이 수업에서 우리는
+
+	A) 파이프라인을 제어학 위해 셰이더를 로드하고 설정하고,
+	B) 정점을 사용하여 모양을 만들고 GPU에서 사용할 수 있도록 준비했다.
+
+	우리가 정점을 우리 스스로 만든 구조체에 넣었을 때, GPU가 어떻게 정점을 읽을 수 있는지 궁금할 것이다. 우리가 위치
+	를 색상보다 먼저 넣었다는 것을 어떻게 할 수 있을까? 우리가 다른 것을 의미하지 않았다는 것을 어떻게 알 수 있을까?
+
+	정답은 입력 레이아웃(input layout)이다.
+
+	앞서 언급했듯이, 렌더링 속도를 개선하기 위해 각 정점에 어떤 정보를 저장할지 선택 할 수 있다. 입력 레이아웃은 정
+	점 구조체의 레이아웃을 포함하는 객체로, GPU가 데이터를 적절하고 효율적으로 구성할 수 있도록 한다.
+
+	ID3D11InputLayout 객체는 VERTEX 구조체의 레이아웃을 저장한다. 이 객체를 생성하려면 CreateInputLayout()함수를
+	호출한다.
+
+	여기에는 두가지 부분이 있다. 첫째, 정점의 각 요소를 정의해야 한다. 둘째, 입력 레이아웃 객체를 만들어야 한다.
+
+입력 요소 만들기
+	정점 레이아웃은 하나 이상의 입력 요소로 구성된다. 입력 요소는 위치나 색상과 같은 정점의 한 속성이다. 각 요소는
+	D3D11_INPUT_ELEMENT_DESC 구조체로 정의된다. 이 구조체는 단일 정점 속성을 설명한다. 여러 속성을 가진 정점을 생
+	성하려면 이러한 구조체를 배열에 넣기만 하면 된다.
+
+	D3D11_INPUT_ELEMENT_DESCied[] =
+	{
+		{"위치", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, 정점_데이터당 D3D11_입력_값, 0},
+		{"색상", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, 정점_데이터당 D3D11_입력_값, 0},
+	};
+
+	이 구조체에는 7개의 값이 있다.
+
+	첫 번째 값은 semantic 이라고 한다.semantic은 GPU에 값이 무엇에 사용되는지 알려주는 문제열이다. 이 표는 몇 가지
+	semantic값을 보여주고 있으며, 계속 진행하면서 더 많은 값을 다룰 예정이다.
+
+	Semantic		Values
+	POSITION		float, float, float - or -D3DXVECTOR3
+	POSITIONT		float, float, float - or -D3DXVECTOR3
+	COLOR			float, float, float, float - or -D3DXVECTOR4 - or -D3DXCOLOR
+	PSIZE			float
+
+	두 번째 값은 Semantic Index이다. 두가지 색상을 가진 정점이 있다면 둘다 COLOR의미 체계를 사용한다. 혼란을 피하기
+	위해 여기서는 각 속성에 다른 숫자를 지정한다.
+
+	세 번째 값은 데이터의 형식이다. 많은 의미론에서 값의 수는 임의적이다.(4개보다 작은 경우) 중요한 것은 형식이 정점
+	에서 사용하는 것과 일치한다는 것이다.
+
+	네 번째 값은 입력 슬롯이라고 한다. 이것은 고급이며 나중에 다룰 것이다. 지금은 0이어야 한다.
+
+	다섯 번째 값은 구조체에서 요소가 몇 바이트인지 나타낸다. 이를 오프셋이라고 한다. 보시다시피, 위치는 오프셋 0이고
+	색상은 오프셋 12이다. 즉, 위치는 구조체에서 0바이트 에서 시작하고 색상은 구조체에서 12바이트에서 시작한다. 사실,
+	D3D11_APPEND_ALIGNED_ELEMENT 를 입력하면 알아서 처리해 주지만, 공간이 부족하다면 어렵다.
+
+	여섯 번째 값은 요소가 사용되는 것이다. 여기에는 두 가지 가능한 플래그가 있지만, 우리가 관심 있는 것은 
+	D3D11_INPUT_PER_VERTEX_DATA 이다. 다른 플래그는 나중에 다른다.
+
+	마지막 값은 D3D11_INPUT_PER_VERTEX_DATA 플래그와 함께 사용되지 않으므로 0으로 설정한다.
