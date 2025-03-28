@@ -427,3 +427,213 @@ struct VERTEX { FLOAT X, Y, Z; D3DXCOLOR Color; }; // 정점을 정의하는 구조체
 	D3D11_INPUT_PER_VERTEX_DATA 이다. 다른 플래그는 나중에 다른다.
 
 	마지막 값은 D3D11_INPUT_PER_VERTEX_DATA 플래그와 함께 사용되지 않으므로 0으로 설정한다.
+
+Input Layout 객체 생성
+	이게 우리가 그림을 그리기 시작하기 전 마지막 과정이다.
+
+	여기서 CreateInputLayout()를 호출하여 정점 형식을 나타내는 객체를 만든다. 논의하기 전에 함수의 프로토타입을 살
+	펴본다.
+
+	HRESULT CreateInputLayout( 
+		D3D11_INPUT_ELEMENT_DESC *pInputElementDescs, 
+		UINT NumElements, 
+		void *pShaderBytecodeWithInputSignature, 
+		SIZE_T BytecodeLength,
+		ID3D11InputLayout **pInputLayout);
+
+	이것은 겉보기에 그렇지 않지만 실제로는 Direct3D에서 가장 쉬운 기능 중 하나이다.
+
+	D3D11_INPUT_ELEMENT_DESC *pInputElementDescs
+		이 첫 번째 매개변수는 요소 설명 배열에 포함된 포인터이다. 여기에 &ied를 넣는다.
+
+	Unit NumElements,
+		꽤 자명한 이 매개변수는 배열의 요소 수이다. 우리의 경우엔 2이다.
+
+	void* pShdaerBytecodeWithINputSignature,
+		이것은 파이프라인의 첫 번째 셰이더, 즉 정점 셰이더에 대한 포인터이다. 즉, 여기에 'VS->GetBufferPointer()'
+		를 넣었다는 뜻이다.
+
+	SIZE_T BytecodeLength,
+		이것은 셰이더 파일의 길이이다. 여기에 'VS->GetBufferSize()'를 넣으면 된다.
+	
+	ID3D11InputLayout **pInputLayout,
+		이것은 입력 레이아웃 객체에 대한 포인터이다. 'pLayout'처럼 간단하게 호출해도 괜찮으므로 여기에 '&pLayout'
+		을 넣는다.
+
+	실제로 함수를 작성한 모습은 다음과 같다.
+
+	ID3D11InputLayout* pLayout; // 전역 
+
+	D3D11_INPUT_ELEMENT_DESC ied[] =
+	{
+		{"위치", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_VERTEX_DATA당_입력_값, 0},
+		{"색상", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_VERTEX_DATA당_입력_값, 0},
+	};
+
+	dev->CreateInputLayout(ied, 2, VS->GetBufferPointer(), VS->GetBufferSize(), &pLayout);
+
+	물론, 이 함수를 실행하려면 VSFile과 VSSize에 엑세스해야 하므로 이 코드를 InitPipeline()함수 내부에 바로 삽입한
+	다.
+
+	void InitPipeline()
+	{
+		// 두 셰이더를 로드하고 컴파일합니다 
+		.ID3D10Blob* VS, * PS;
+		D3DX11CompileFromFile(L"shaders.shader", 0, 0, "VShader", "vs_4_0", 0, 0, 0, &VS, 0, 0);
+		D3DX11CompileFromFile(L"shaders.shader", 0, 0, "PShader", "ps_4_0", 0, 0, 0, &PS, 0, 0);
+
+		// 두 셰이더를 셰이더 객체로 캡슐화합니다 
+		.dev->CreateVertexShader(VS->GetBufferPointer(), VS->GetBufferSize(), NULL, &pVS);
+		dev->CreatePixelShader(PS->GetBufferPointer(), PS->GetBufferSize(), NULL, &pPS);
+
+		// 셰이더 객체를 설정합니다. 
+		devcon->VSSetShader(pVS, 0, 0);
+		devcon->PSSetShader(pPS, 0, 0);
+
+		// 입력 레이아웃 객체를 생성합니다 
+		. D3D11_INPUT_ELEMENT_DESC ied[] =
+		{
+			{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		};
+
+		dev->CreateInputLayout(ied, 2, VS->GetBufferPointer(), VS->GetBufferSize(), &pLayout);
+	}
+
+	계속하기 전에 마지막으로 한가지 말하자면, 입력 레이아웃을 만드는 것은 설정되기 전 까지는 아무 일도 일어나지 않는
+	다. 입력 레이아웃을 설정하려면 IASetInputLayout() 함수를 호출한다. 유일한 매개변수는 입력 레이아웃 객체이다.
+
+	void InitPipeline()
+	{
+		// 두 셰이더를 로드하고 컴파일합니다 
+		.ID3D10Blob* VS, * PS;
+		D3DX11CompileFromFile(L"shaders.shader", 0, 0, "VShader", "vs_4_0", 0, 0, 0, &VS, 0, 0);
+		D3DX11CompileFromFile(L"shaders.shader", 0, 0, "PShader", "ps_4_0", 0, 0, 0, &PS, 0, 0);
+
+		// 두 셰이더를 셰이더 객체로 캡슐화합니다 
+		.dev->CreateVertexShader(VS->GetBufferPointer(), VS->GetBufferSize(), NULL, &pVS);
+		dev->CreatePixelShader(PS->GetBufferPointer(), PS->GetBufferSize(), NULL, &pPS);
+
+		// 셰이더 객체를 설정합니다 
+		.devcon->VSSetShader(pVS, 0, 0);
+		devcon->PSSetShader(pPS, 0, 0);
+
+		// 입력 레이아웃 객체를 생성합니다 
+		.D3D11_INPUT_ELEMENT_DESC ied[] =
+		{
+			{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		};
+
+		dev->CreateInputLayout(ied, 2, VS->GetBufferPointer(), VS->GetBufferSize(), &pLayout);
+		devcon->IASetInputLayout(pLayout);
+	}
+
+	이제 실제로 뭔가를 그려보자.
+
+Primitive 그리기
+	렌더링을 위해 호출해야 하는 간단한 함수는 세가지가 있다.
+
+	첫 번째는 어떤 정점 버퍼를 사용할 것인지 설정한다. 두 번째는 어떤 유형의 기본형을 사용할 것인지 설정한다.(예: 삼
+	각형 목록, 라인스트립 등) 세 번째는 실제로 모양을 그린다.
+
+	IASetVertexBuffers()
+		이러한 함수 중 첫 번째는 IASetVertexBuffers()이다. 이것은 렌더링 할 때 어떤 정점을 읽어야 하는지 GPU에 알려
+		준다. 몇 가지 쉬운 매개변수가 있으므로 프로토타입을 살펴보자.
+
+		void IASetVertexBuffers(UINT StartSlot,
+                        UINT NumBuffers,
+                        ID3D11Buffer **ppVertexBuffers,
+                        UINT *pStrides,
+                        UINT *pOffsets);
+
+		첫 번째 매개변수는 고급이므로 지금은 0으로 설정한다.
+
+		두 번째 매개변수는 우리가 설정하는 버퍼의 수를 알려준다. 버퍼가 하나밖에 없으므로 &pVBuffer로 채울 수 있다.
+
+		네 번째 매개변수는 각 정점 버퍼의 단일 정점 크기를 알려주는 UINT 배열을 가리킨다. 이 매개변수를 채우기 위해
+		UINT를 만들고 "sizeof(VERTEX)"로 채우고 해당 UINT의 주소를 여기에 넣는다.
+
+		다섯 번째 매개변수는 렌더링을 시작해야 하는 정점 버퍼의 바이트 수를 알려주는 UINT 배열이다. 보통은 0이다. 이를
+		위해 0의 UINT를 생성하고 여기에 주소를 넣는다.
+
+		매개변수를 전부 채우고 나면 다음과 같다.
+
+		UINT stride = sizeof(VERTEX);
+		UINT offset = 0;
+		devcon->IASetVertexBuffers(0, 1, &pBuffer, &stride, &offset);
+
+	IASetPrimitvieTopology()
+		이 두 번째 함수는 DIrect3D에 어떤 유형의 기본이 사용되는지 알려준다. 이는 레슨 3에서 다루었지만 사용된 코드
+		는 다음과 같다.
+
+		Flag										Description
+		D3D11_PRIMITIVE_TOPOLOGY_POINTLIST			Shows a series of points, one for each vertex.
+		D3D11_PRIMITIVE_TOPOLOGY_LINELIST			Shows a series of separated lines.
+		D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP			Shows a series of connected lines.
+		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST		Shows a series of separated triangles.
+		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP		Shows a series of connected triangles.
+
+		이 함수의 유일한 매개변수는 이러한 플래그 중 하나이다. 다음과 같이 작성된다.
+
+		devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	DRAW()
+		이제 DIrect3D에 어떤 종류의 기본형을 렌더링할지, 어떤 정점 버퍼에서 읽어올지 알려줬으므로, 정점 버퍼에 내용
+		을 그리도록 지시한다.
+
+		이 함수는 정점 버퍼의 기본형을 백 버퍼로 그린다.프로토타입은 다음과 같다.
+
+		void Draw(UINT VertexCount,			// 그려질 정점의 수
+				  UINT StartVetexLocation);	// 그려질 첫 번째 정점
+
+		이러한 매개변수는 버퍼에서 어떤 정점을 그릴지 제어한다. 두 번째 매개변수는 그려야 할 버퍼의 첫 번째 정점을
+		알려주는 숫자이고, 첫번째 매개변수는 그려야 할 정점의 수이다.
+
+		실제로 함수는 다음과 같다.
+
+		devcon->Draw(3, 0); // 정점 0부터 시작하여 3개의 정점을 그립니다.
+
+		이제 수정한 render_frame() 함수 전체를 살펴본다.
+
+		// 단일 프레임을 렌더링하는 데 사용되는 함수 
+		void RenderFrame(void)
+		{
+			// 백 버퍼를 진한 파란색으로 지웁니다 
+			devcon->ClearRenderTargetView(backbuffer, D3DXCOLOR(0.0f, 0.2f, 0.4f, 1.0f));
+
+			// 표시할 정점 버퍼를 선택합니다 
+			UINT stride = sizeof(VERTEX);
+			UINT offset = 0;
+			devcon->IASetVertexBuffers(0, 1, &pVBuffer, &stride, &offset);
+
+			// 사용할 기본 유형을 선택합니다 
+			devcon->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+			// 정점 버퍼를 백 버퍼에 그립니다 
+			devcon->Draw(3, 0);
+
+			// 백 버퍼와 프런트 버퍼를 전환합니다 
+			swapchain->Present(0, 0);
+		}
+
+		정점 버퍼를 구축하고 셰이더를 로딩하는 것에 비하면 그림 그리기는 놀라울 정도로 간단하다.
+
+완성된 프로그램
+	이 프로그램을 빌드하고 실행하기 전에 셰이더 파일 자체가 필요하다. "Shaders.shader"라고 하며, 내용은 아래 "Show
+	Shaders" 라고 적힌 곳에서 찾을 수 있다. 이 시점에서는 셰이더 코드를 반드시 이해할 필요는 없다. 다음 튜토리얼에서
+	자세히 다룬다.
+
+	이 파일은 프로젝트 폴더 자체에 저장해야 한다. 솔루션 탐색기에서 '모든 파일 표시'를 실행 할 수 없다. 다음과 같아
+	야한다.
+
+	http://www.directxtutorial.com/Lessons/11/B1-D3DGettingStarted/5/5.png
+	솔루션 탐색기의 셰이더 파일
+
+	최종 DirectX 코드를 살펴본다.
+	//동일 경로 내 main.cpp, Shader.shader 파일 참고
+
+	계속해서 업데이트 하고 어떤 결과가 나오는지 살펴본다. 이것을 실행하면 화면에 다음과 같이 표시된다.
+
+	http://www.directxtutorial.com/Lessons/11/B1-D3DGettingStarted/5/6.png
+	렌더링 된 삼각형
