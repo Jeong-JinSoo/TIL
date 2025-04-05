@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Main">
+      <UniqueIdentifier>{314a7727-366b-4aaa-b60c-a6b445a855be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GdiRenderer">
+      <UniqueIdentifier>{0bf180db-7abe-4b4c-80f9-226b71d61af3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{0363bb02-c4c8-46c6-bdc9-ac351b6d2c01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math\Matrix">
+      <UniqueIdentifier>{75363108-f0fb-493d-80bb-63255ccdeb82}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math\Transform">
+      <UniqueIdentifier>{e3f4cb7c-8de1-4c5a-89fa-c7e73257a6c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RenderStruct">
+      <UniqueIdentifier>{cad57c1e-cfdf-42ae-a4b4-c3f53c3c10d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RenderStruct\Camera">
+      <UniqueIdentifier>{ec9cf905-c3b4-45bb-902f-4878507d083e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="InputSetting">
+      <UniqueIdentifier>{ac56de2c-b351-4bc7-a25b-e19dd0b9003f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SoundSystem">
+      <UniqueIdentifier>{fb78e901-8247-41c1-9a58-a1b9192312cb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="GDIRenderer.cpp">
+      <Filter>GdiRenderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform.cpp">
+      <Filter>Math\Transform</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>RenderStruct\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="inputsystem.cpp">
+      <Filter>InputSetting</Filter>
+    </ClCompile>
+    <ClCompile Include="testdirectinput.cpp">
+      <Filter>InputSetting</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundSystem.cpp">
+      <Filter>SoundSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicsClass.cpp">
+      <Filter>GdiRenderer</Filter>
+    </ClCompile>
+    <ClCompile Include="MainEntry.cpp">
+      <Filter>Main</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GDIRenderer.h">
+      <Filter>GdiRenderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Matrix.hpp">
+      <Filter>Math\Matrix</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>Math\Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderStruct.hpp">
+      <Filter>RenderStruct</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicsClass.h">
+      <Filter>RenderStruct</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>RenderStruct\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="testdirectinput.h">
+      <Filter>InputSetting</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundSystem.h">
+      <Filter>SoundSystem</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
